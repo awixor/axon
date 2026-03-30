@@ -34,6 +34,8 @@ export interface Item {
   authorName: string;
   spaceIds: string[];
   updatedAt: string;
+  isPinned?: boolean;
+  isFavorite?: boolean;
 }
 
 export const currentUser: User = {
@@ -74,6 +76,8 @@ export const items: Item[] = [
     authorName: "Sarah Chen",
     spaceIds: ["space-1", "space-3"],
     updatedAt: "2 hours ago",
+    isPinned: true,
+    isFavorite: true,
   },
   {
     id: "item-2",
@@ -84,6 +88,7 @@ export const items: Item[] = [
     authorName: "Marcus Webb",
     spaceIds: ["space-2", "space-6"],
     updatedAt: "1 day ago",
+    isFavorite: true,
   },
   {
     id: "item-3",
@@ -114,6 +119,7 @@ export const items: Item[] = [
     authorName: "Marcus Webb",
     spaceIds: ["space-5"],
     updatedAt: "12 hours ago",
+    isPinned: true,
   },
   {
     id: "item-6",
@@ -134,6 +140,7 @@ export const items: Item[] = [
     authorName: "Sarah Chen",
     spaceIds: ["space-1", "space-3"],
     updatedAt: "4 days ago",
+    isFavorite: true,
   },
   {
     id: "item-8",
