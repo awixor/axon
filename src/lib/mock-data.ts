@@ -22,6 +22,7 @@ export interface Space {
   name: string;
   color: string;
   itemCount: number;
+  isFavorite?: boolean;
 }
 
 export interface Item {
@@ -44,7 +45,7 @@ export const currentUser: User = {
 };
 
 export const spaces: Space[] = [
-  { id: "space-1", name: "Onboarding 2026", color: "#60a5fa", itemCount: 12 },
+  { id: "space-1", name: "Onboarding 2026", color: "#60a5fa", itemCount: 12, isFavorite: true },
   {
     id: "space-2",
     name: "Infrastructure/SRE",
@@ -56,6 +57,7 @@ export const spaces: Space[] = [
     name: "Frontend Standards",
     color: "#a78bfa",
     itemCount: 15,
+    isFavorite: true,
   },
   { id: "space-4", name: "Security Protocols", color: "#fbbf24", itemCount: 9 },
   { id: "space-5", name: "API Guidelines", color: "#34d399", itemCount: 6 },

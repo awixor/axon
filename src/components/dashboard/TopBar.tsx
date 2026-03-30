@@ -1,11 +1,22 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Menu, Plus, Search } from 'lucide-react'
+import { useSidebar } from './SidebarContext'
 
 export function TopBar() {
+  const { setMobileOpen } = useSidebar()
+
   return (
-    <header className="flex items-center gap-4 px-4 h-14 border-b border-border shrink-0">
-      <span className="font-semibold text-base tracking-tight shrink-0">Axon</span>
+    <header className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0">
+      <button
+        className="md:hidden p-1.5 rounded hover:bg-accent text-muted-foreground"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open menu"
+      >
+        <Menu size={18} />
+      </button>
 
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -25,5 +36,5 @@ export function TopBar() {
         </Button>
       </div>
     </header>
-  );
+  )
 }
