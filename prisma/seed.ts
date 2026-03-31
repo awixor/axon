@@ -8,71 +8,91 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("🌱 Seeding database...");
 
+  // ── Cleanup (order respects FK constraints) ───────────────────────────────
+  await prisma.auditLog.deleteMany();
+  await prisma.itemSpace.deleteMany();
+  await prisma.item.deleteMany();
+  await prisma.space.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.account.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.team.deleteMany();
+
   // ── Team ──────────────────────────────────────────────────────────────────
   const team = await prisma.team.upsert({
     where: { id: "team-demo" },
     update: {},
     create: {
       id: "team-demo",
-      name: "Acme Engineering",
-      isPro: false,
+      name: "Axon Demo Team",
+      isPro: true,
     },
   });
 
-  // ── Users ─────────────────────────────────────────────────────────────────
-  const jane = await prisma.user.upsert({
-    where: { email: "jane@acme.dev" },
+  // ── User ──────────────────────────────────────────────────────────────────
+  const demo = await prisma.user.upsert({
+    where: { email: "demo@axon.so" },
     update: {},
     create: {
-      id: "user-1",
-      email: "jane@acme.dev",
-      name: "Jane Doe",
+      id: "user-demo",
+      email: "demo@axon.so",
+      name: "Demo Engineer",
       role: Role.ADMIN,
+      emailVerified: new Date(),
       teamId: team.id,
     },
   });
 
-  const sarah = await prisma.user.upsert({
-    where: { email: "sarah@acme.dev" },
-    update: {},
-    create: {
-      id: "user-2",
-      email: "sarah@acme.dev",
-      name: "Sarah Chen",
-      role: Role.MEMBER,
-      teamId: team.id,
+  // ── Team Spaces ───────────────────────────────────────────────────────────
+  const teamSpaceDefs = [
+    {
+      id: "space-onboarding",
+      name: "Onboarding",
+      color: "#60a5fa",
+      description: "Getting-started guides, setup docs, first steps",
     },
-  });
-
-  const marcus = await prisma.user.upsert({
-    where: { email: "marcus@acme.dev" },
-    update: {},
-    create: {
-      id: "user-3",
-      email: "marcus@acme.dev",
-      name: "Marcus Webb",
-      role: Role.MEMBER,
-      teamId: team.id,
+    {
+      id: "space-ai-workflows",
+      name: "AI Workflows",
+      color: "#6366f1",
+      description: "AI prompts, blueprints, and automation templates",
     },
-  });
-
-  // ── Spaces ────────────────────────────────────────────────────────────────
-  const spaceDefs = [
-    { id: "space-1", name: "Onboarding 2026", color: "#60a5fa" },
-    { id: "space-2", name: "Infrastructure/SRE", color: "#f87171" },
-    { id: "space-3", name: "Frontend Standards", color: "#a78bfa" },
-    { id: "space-4", name: "Security Protocols", color: "#fbbf24" },
-    { id: "space-5", name: "API Guidelines", color: "#34d399" },
-    { id: "space-6", name: "DevOps Playbooks", color: "#6366f1" },
+    {
+      id: "space-general",
+      name: "General",
+      color: "#34d399",
+      description: "Shared resources that don't belong elsewhere",
+    },
   ];
 
-  for (const s of spaceDefs) {
+  for (const s of teamSpaceDefs) {
     await prisma.space.upsert({
       where: { id: s.id },
       update: {},
-      create: { ...s, visibility: Visibility.PRIVATE_TO_TEAM, teamId: team.id },
+      create: {
+        ...s,
+        visibility: Visibility.PRIVATE_TO_TEAM,
+        isPersonal: false,
+        teamId: team.id,
+      },
     });
   }
+
+  // ── Personal Space (demo user) ────────────────────────────────────────────
+  await prisma.space.upsert({
+    where: { id: "space-personal-demo" },
+    update: {},
+    create: {
+      id: "space-personal-demo",
+      name: "My Space",
+      color: "#94a3b8",
+      description: "Personal scratchpad",
+      visibility: Visibility.PRIVATE_TO_TEAM,
+      isPersonal: true,
+      userId: demo.id,
+      teamId: team.id,
+    },
+  });
 
   // ── Items ─────────────────────────────────────────────────────────────────
   const itemDefs: {
@@ -81,146 +101,207 @@ async function main() {
     type: ItemType;
     content: string;
     isVerified: boolean;
-    authorId: string;
     spaceIds: string[];
   }[] = [
+    // Onboarding
     {
-      id: "item-1",
-      title: "React Query Setup Pattern",
-      type: ItemType.SNIPPET,
-      content: `import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 60 * 1000, retry: 1 },
-  },
-});`,
-      isVerified: true,
-      authorId: sarah.id,
-      spaceIds: ["space-1", "space-3"],
-    },
-    {
-      id: "item-2",
-      title: "PostgreSQL Backup Runbook",
-      type: ItemType.RUNBOOK,
-      content: `# Stop production server
-ssh db-0.prod.acme.dev
-pg_dump -U postgres neondb > backup-$(date +%Y%m%d).sql`,
-      isVerified: true,
-      authorId: marcus.id,
-      spaceIds: ["space-2", "space-6"],
-    },
-    {
-      id: "item-3",
-      title: "AWS Production Access Keys",
-      type: ItemType.SECRET_REF,
-      content: `Vault Path: secret/aws/production/api-keys
-Rotation Schedule: Every 90 days`,
-      isVerified: false,
-      authorId: jane.id,
-      spaceIds: ["space-4"],
-    },
-    {
-      id: "item-4",
-      title: "Component Architecture Guide",
+      id: "item-onboarding-doc",
+      title: "Team Onboarding Guide",
       type: ItemType.DOC,
-      content: `# Component Architecture
-## Atomic Design Principles
-Our frontend follows atomic design: atoms → molecules → organisms → templates → pages.`,
-      isVerified: false,
-      authorId: sarah.id,
-      spaceIds: ["space-3"],
+      content: `# Welcome to Axon Demo Team
+
+## Day 1 Checklist
+- [ ] Get access to this workspace
+- [ ] Read the engineering handbook
+- [ ] Set up your local dev environment (see the Runbook)
+- [ ] Say hi in #engineering
+
+## Useful Links
+- GitHub org: github.com/axon-demo
+- Internal API docs: docs.internal.axon.so
+- Incident runbook: Spaces → Infrastructure`,
+      isVerified: true,
+      spaceIds: ["space-onboarding"],
     },
     {
-      id: "item-5",
+      id: "item-onboarding-runbook",
+      title: "Local Dev Environment Setup",
+      type: ItemType.RUNBOOK,
+      content: `# Local Dev Setup
+
+## Prerequisites
+- Node.js 20+
+- pnpm 9+
+- Docker (for local Postgres)
+
+## Steps
+\`\`\`bash
+# 1. Clone the repo
+git clone git@github.com:axon-demo/axon.git && cd axon
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Copy env vars
+cp .env.example .env.local
+
+# 4. Start local database
+docker compose up -d
+
+# 5. Run migrations and seed
+pnpm db:migrate && pnpm db:seed
+
+# 6. Start dev server
+pnpm dev
+\`\`\``,
+      isVerified: true,
+      spaceIds: ["space-onboarding"],
+    },
+    {
+      id: "item-onboarding-blueprint",
+      title: "Next.js Project Starter Prompt",
+      type: ItemType.BLUEPRINT,
+      content: `Create a new Next.js 16 project with the following setup:
+- TypeScript strict mode
+- Tailwind CSS v4
+- App Router with src/ directory
+- ShadCN UI initialized
+- Prisma 7 with Neon PostgreSQL adapter
+- Auth.js (NextAuth v5) with credentials + GitHub provider
+- ESLint + Prettier configured
+
+Start by scaffolding the folder structure, then implement auth, then database. Ask before adding any third-party dependencies not listed above.`,
+      isVerified: true,
+      spaceIds: ["space-onboarding"],
+    },
+
+    // AI Workflows
+    {
+      id: "item-ai-claude-blueprint",
+      title: "Claude API Integration Prompt",
+      type: ItemType.BLUEPRINT,
+      content: `Integrate the Anthropic Claude API into this Next.js app.
+
+Requirements:
+- Use the @anthropic-ai/sdk package
+- Create a Server Action at src/actions/ai.ts
+- Model: claude-sonnet-4-6
+- Stream responses using the streaming API
+- Add a simple chat UI component at src/components/ai/ChatPanel.tsx
+- Store conversation history in component state only (no DB persistence needed)
+- Handle errors gracefully and show toast notifications
+
+Do not add rate limiting or auth checks in this first pass.`,
+      isVerified: true,
+      spaceIds: ["space-ai-workflows"],
+    },
+    {
+      id: "item-ai-review-blueprint",
+      title: "Code Review Automation Prompt",
+      type: ItemType.BLUEPRINT,
+      content: `Set up an automated code review workflow using Claude.
+
+Trigger: GitHub Actions on pull_request opened/synchronize
+Steps:
+1. Fetch the PR diff via GitHub API
+2. Send diff to Claude claude-sonnet-4-6 with this system prompt:
+   "You are a senior engineer reviewing a PR. Focus on: correctness, security (OWASP top 10), performance, and code style. Be concise. Flag blockers vs suggestions."
+3. Post the review as a PR comment via GitHub API
+4. Exit with code 1 if Claude flags any blocker-level issues
+
+Provide the full GitHub Actions YAML and the Node.js script.`,
+      isVerified: true,
+      spaceIds: ["space-ai-workflows"],
+    },
+    {
+      id: "item-ai-claude-docs",
+      title: "Claude API Documentation",
+      type: ItemType.RESOURCE,
+      content: `URL: https://docs.anthropic.com/en/api/getting-started
+Notes: Official Anthropic API reference. See the "Messages" and "Streaming" sections for integration patterns used in our Claude API Integration Blueprint.`,
+      isVerified: true,
+      spaceIds: ["space-ai-workflows"],
+    },
+
+    // General
+    {
+      id: "item-general-api-resource",
       title: "Internal API Documentation",
       type: ItemType.RESOURCE,
-      content: `URL: https://docs.internal.acme.dev/api/v2
-Auth: Bearer token via /auth/token`,
+      content: `URL: https://docs.internal.axon.so/api/v1
+Auth: Bearer token — obtain via POST /auth/token with your demo@axon.so credentials.
+Rate limit: 1000 req/min on Team-Pro plan.`,
       isVerified: true,
-      authorId: marcus.id,
-      spaceIds: ["space-5"],
+      spaceIds: ["space-general"],
     },
     {
-      id: "item-6",
-      title: "System Architecture Diagram",
-      type: ItemType.ASSET,
-      content: `File: architecture-v1.fig
-Last Updated: March 2026
-Includes microservices overview and data flow diagrams.`,
-      isVerified: true,
-      authorId: jane.id,
-      spaceIds: ["space-2"],
-    },
-    {
-      id: "item-7",
-      title: "Next.js Project Starter",
-      type: ItemType.BLUEPRINT,
-      content: `npx create-next-app@latest --typescript --tailwind --eslint --app --src-dir`,
-      isVerified: true,
-      authorId: sarah.id,
-      spaceIds: ["space-1", "space-3"],
-    },
-    {
-      id: "item-8",
-      title: "Kubernetes Deployment Script",
-      type: ItemType.RUNBOOK,
-      content: `kubectl apply -f k8s/staging/
-kubectl rollout status deployment/axon-api
-kubectl get pods -n staging`,
-      isVerified: true,
-      authorId: marcus.id,
-      spaceIds: ["space-2", "space-6"],
-    },
-    {
-      id: "item-9",
-      title: "Error Handling Patterns",
+      id: "item-general-error-snippet",
+      title: "Reusable Error Handling Pattern",
       type: ItemType.SNIPPET,
-      content: `class ApplicationError extends Error {
-  constructor(message: string, public code: string) {
+      content: `// src/lib/errors.ts
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly status: number = 500,
+  ) {
     super(message);
-    this.name = 'ApplicationError';
+    this.name = "AppError";
   }
+}
+
+// Server Action pattern
+export type ActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+export function ok<T>(data: T): ActionResult<T> {
+  return { success: true, data };
+}
+
+export function err(message: string): ActionResult<never> {
+  return { success: false, error: message };
 }`,
-      isVerified: false,
-      authorId: sarah.id,
-      spaceIds: ["space-3"],
+      isVerified: true,
+      spaceIds: ["space-general"],
     },
     {
-      id: "item-10",
-      title: "Stripe Integration Keys",
+      id: "item-general-tailwind-resource",
+      title: "Tailwind CSS v4 Docs",
+      type: ItemType.RESOURCE,
+      content: `URL: https://tailwindcss.com/docs
+Version: v4 — note breaking changes from v3. We use CSS-based config (@theme directive in globals.css). No tailwind.config.js in this project.`,
+      isVerified: true,
+      spaceIds: ["space-general"],
+    },
+
+    // Personal (demo user)
+    {
+      id: "item-personal-secret",
+      title: "AWS Production Keys Reference",
       type: ItemType.SECRET_REF,
-      content: `Vault Path: secret/stripe/production
-Keys: pk_live_*, sk_live_*`,
+      content: `Vault Path: secret/aws/production/api-keys
+Store: AWS Secrets Manager (us-east-1)
+Rotation Schedule: Every 90 days — next rotation: 2026-06-01
+Access: ADMIN role only`,
       isVerified: false,
-      authorId: jane.id,
-      spaceIds: ["space-4"],
+      spaceIds: ["space-personal-demo"],
     },
     {
-      id: "item-11",
-      title: "Git Workflow Documentation",
+      id: "item-personal-notes",
+      title: "Personal Notes Draft",
       type: ItemType.DOC,
-      content: `# Git Workflow
-## Branch Naming
-- feature/TICKET-id
-- fix/TICKET-id
-- chore/description`,
+      content: `# Draft — not ready to share
+
+## Ideas
+- Investigate pgvector semantic search for item discovery
+- Explore Claude Knowledge Bridge feature for auto-linking snippets
+
+## TODO
+- [ ] Finish onboarding guide review
+- [ ] Ping DevOps about R2 storage allocation`,
       isVerified: false,
-      authorId: marcus.id,
-      spaceIds: ["space-1", "space-6"],
-    },
-    {
-      id: "item-12",
-      title: "CI/CD Pipeline Blueprint",
-      type: ItemType.BLUEPRINT,
-      content: `# GitHub Actions Workflow
-name: CI/CD Pipeline
-on:
-  push:
-    branches: [main, staging]`,
-      isVerified: false,
-      authorId: jane.id,
-      spaceIds: ["space-6"],
+      spaceIds: ["space-personal-demo"],
     },
   ];
 
@@ -230,7 +311,8 @@ on:
       update: {},
       create: {
         ...item,
-        lastEditedById: item.authorId,
+        authorId: demo.id,
+        lastEditedById: demo.id,
         teamId: team.id,
       },
     });
@@ -244,20 +326,10 @@ on:
     }
   }
 
-  // Pin item-1 and item-5 to their spaces
-  await prisma.itemSpace.update({
-    where: { itemId_spaceId: { itemId: "item-1", spaceId: "space-1" } },
-    data: { pinned: true },
-  });
-  await prisma.itemSpace.update({
-    where: { itemId_spaceId: { itemId: "item-5", spaceId: "space-5" } },
-    data: { pinned: true },
-  });
-
   console.log("✅ Seed complete");
-  console.log(`   Team:   ${team.name}`);
-  console.log(`   Users:  3`);
-  console.log(`   Spaces: ${spaceDefs.length}`);
+  console.log(`   Team:   ${team.name} (isPro: ${team.isPro})`);
+  console.log(`   Users:  1 (${demo.email})`);
+  console.log(`   Spaces: ${teamSpaceDefs.length} team + 1 personal`);
   console.log(`   Items:  ${itemDefs.length}`);
 }
 
