@@ -117,22 +117,27 @@ model Item {
   title          String
   type           ItemType
   content        String      @db.Text
+  metadata       Json?
   fileUrl        String?
   isVerified     Boolean     @default(false)
+  visibility     Visibility  @default(PRIVATE_TO_TEAM)
   authorId       String
   author         User        @relation("ItemAuthor", fields: [authorId], references: [id])
-  lastEditedById String
-  lastEditedBy   User        @relation("ItemEditor", fields: [lastEditedById], references: [id])
+  lastEditedById String?
+  lastEditedBy   User?       @relation("ItemEditor", fields: [lastEditedById], references: [id])
   teamId         String
   team           Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
   spaces         ItemSpace[]
   auditLogs      AuditLog[]
+  deletedAt      DateTime?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
   @@index([teamId])
   @@index([authorId])
   @@index([type])
+  @@index([deletedAt])
+  @@index([visibility])
 }
 
 model Space {
