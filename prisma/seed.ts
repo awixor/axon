@@ -54,7 +54,7 @@ async function main() {
     {
       id: "space-ai-workflows",
       name: "AI Workflows",
-      color: "#6366f1",
+      color: "#f87171",
       description: "AI prompts, blueprints, and automation templates",
     },
     {
@@ -85,7 +85,7 @@ async function main() {
     create: {
       id: "space-personal-demo",
       name: "My Space",
-      color: "#94a3b8",
+      color: "#fbbf24",
       description: "Personal scratchpad",
       visibility: Visibility.PRIVATE_TO_TEAM,
       isPersonal: true,
