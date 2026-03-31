@@ -1,0 +1,176 @@
+// Prisma 7 schema — datasource url is defined in prisma.config.ts, not here
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MEMBER
+  READ_ONLY
+}
+
+enum ItemType {
+  SNIPPET
+  RUNBOOK
+  SECRET_REF
+  DOC
+  RESOURCE
+  ASSET
+  BLUEPRINT
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE_TO_TEAM
+}
+
+enum AuditAction {
+  VIEW
+  EDIT
+  DELETE
+}
+
+// ─── NextAuth Models ──────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Core Models ─────────────────────────────────────────────────────────────
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  isPro     Boolean  @default(false)
+  users     User[]
+  items     Item[]
+  spaces    Space[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String?    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  role          Role       @default(MEMBER)
+  teamId        String?
+  team          Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  itemsCreated  Item[]     @relation("ItemAuthor")
+  itemsUpdated  Item[]     @relation("ItemEditor")
+  auditLogs     AuditLog[]
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([teamId])
+}
+
+model Item {
+  id             String      @id @default(cuid())
+  title          String
+  type           ItemType
+  content        String      @db.Text
+  fileUrl        String?
+  isVerified     Boolean     @default(false)
+  authorId       String
+  author         User        @relation("ItemAuthor", fields: [authorId], references: [id])
+  lastEditedById String
+  lastEditedBy   User        @relation("ItemEditor", fields: [lastEditedById], references: [id])
+  teamId         String
+  team           Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  spaces         ItemSpace[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([teamId])
+  @@index([authorId])
+  @@index([type])
+}
+
+model Space {
+  id          String      @id @default(cuid())
+  name        String
+  color       String
+  visibility  Visibility  @default(PRIVATE_TO_TEAM)
+  description String?
+  teamId      String
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  items       ItemSpace[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([teamId])
+}
+
+model ItemSpace {
+  itemId  String
+  item    Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  spaceId String
+  space   Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  pinned  Boolean @default(false)
+
+  @@id([itemId, spaceId])
+  @@index([spaceId])
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  itemId    String
+  item      Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  action    AuditAction
+  timestamp DateTime    @default(now())
+
+  @@index([userId])
+  @@index([itemId])
+  @@index([timestamp])
+}
