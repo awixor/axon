@@ -93,21 +93,22 @@ model Team {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  email         String?    @unique
-  name          String?
-  image         String?
-  emailVerified DateTime?
-  role          Role       @default(MEMBER)
-  teamId        String?
-  team          Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  itemsCreated  Item[]     @relation("ItemAuthor")
-  itemsUpdated  Item[]     @relation("ItemEditor")
-  auditLogs     AuditLog[]
-  accounts      Account[]
-  sessions      Session[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  email          String?    @unique
+  name           String?
+  image          String?
+  emailVerified  DateTime?
+  role           Role       @default(MEMBER)
+  teamId         String?
+  team           Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  itemsCreated   Item[]     @relation("ItemAuthor")
+  itemsUpdated   Item[]     @relation("ItemEditor")
+  auditLogs      AuditLog[]
+  accounts       Account[]
+  sessions       Session[]
+  personalSpaces Space[]    @relation("PersonalSpace")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   @@index([teamId])
 }
@@ -146,6 +147,9 @@ model Space {
   color       String
   visibility  Visibility  @default(PRIVATE_TO_TEAM)
   description String?
+  isPersonal  Boolean     @default(false)
+  userId      String?
+  owner       User?       @relation("PersonalSpace", fields: [userId], references: [id], onDelete: Cascade)
   teamId      String
   team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
   items       ItemSpace[]
@@ -153,6 +157,7 @@ model Space {
   updatedAt   DateTime    @updatedAt
 
   @@index([teamId])
+  @@index([userId])
 }
 
 model ItemSpace {
