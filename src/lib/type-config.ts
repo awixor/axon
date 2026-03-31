@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Terminal,
 } from "lucide-react";
-import { type ItemType } from "@/lib/mock-data";
+import { type ItemType } from "@/types/items";
 
 export type TypeConfig = {
   label: string;

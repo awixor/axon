@@ -1,8 +1,9 @@
 import { BadgeCheck, Pin } from "lucide-react";
-import { type Item } from "@/lib/mock-data";
+import { type ItemRow } from "@/lib/db/items";
 import { TYPE_CONFIG } from "@/lib/type-config";
+import { relativeTime } from "@/lib/utils/time";
 
-export function ItemCard({ item }: { item: Item }) {
+export function ItemCard({ item }: { item: ItemRow }) {
   const config = TYPE_CONFIG[item.type];
   const Icon = config.icon;
 
@@ -49,7 +50,7 @@ export function ItemCard({ item }: { item: Item }) {
             </span>
           )}
           <span className="ml-auto truncate">
-            {item.authorName} · {item.updatedAt}
+            {item.authorName} · {relativeTime(item.updatedAt)}
           </span>
         </div>
       </div>
