@@ -13,12 +13,12 @@ export function RecentItems({ items }: { items: ItemRow[] }) {
   const filtered =
     filter === "ALL" ? items : items.filter((i) => i.type === filter);
 
-  const typeCounts = ITEM_TYPES.reduce(
-    (acc, type) => ({
-      ...acc,
-      [type]: items.filter((i) => i.type === type).length,
-    }),
-    {} as Record<ItemType, number>,
+  const typeCounts = items.reduce(
+    (acc, item) => {
+      acc[item.type] = (acc[item.type] ?? 0) + 1;
+      return acc;
+    },
+    {} as Partial<Record<ItemType, number>>,
   );
 
   return (
@@ -33,13 +33,13 @@ export function RecentItems({ items }: { items: ItemRow[] }) {
           count={items.length}
         />
         {ITEM_TYPES.map((type) =>
-          typeCounts[type] > 0 ? (
+          (typeCounts[type] ?? 0) > 0 ? (
             <FilterTab
               key={type}
               active={filter === type}
               onClick={() => setFilter(type)}
               label={TYPE_CONFIG[type].plural}
-              count={typeCounts[type]}
+              count={typeCounts[type] ?? 0}
               icon={TYPE_CONFIG[type].icon}
               color={TYPE_CONFIG[type].color}
             />

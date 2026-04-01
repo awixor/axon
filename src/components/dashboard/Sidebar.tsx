@@ -5,16 +5,10 @@ import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Code2,
-  FileText,
-  Globe,
   Layout,
   LayoutDashboard,
-  Paperclip,
   Search,
   Settings,
-  ShieldCheck,
-  Terminal,
   Users,
   X,
 } from "lucide-react";
@@ -22,37 +16,25 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { type SpaceRow } from "@/lib/db/spaces";
 import { type UserRow } from "@/lib/db/users";
+import { TYPE_CONFIG } from "@/lib/type-config";
 import { useSidebar } from "./SidebarContext";
 
-const ITEM_TYPES = [
-  { label: "Snippets", href: "/items/snippets", icon: Code2, color: "#60a5fa" },
-  {
-    label: "Runbooks",
-    href: "/items/runbooks",
-    icon: Terminal,
-    color: "#f87171",
-  },
-  {
-    label: "Secrets",
-    href: "/items/secrets",
-    icon: ShieldCheck,
-    color: "#fbbf24",
-  },
-  { label: "Docs", href: "/items/docs", icon: FileText, color: "#a78bfa" },
-  {
-    label: "Resources",
-    href: "/items/resources",
-    icon: Globe,
-    color: "#34d399",
-  },
-  { label: "Assets", href: "/items/assets", icon: Paperclip, color: "#94a3b8" },
-  {
-    label: "Blueprints",
-    href: "/items/blueprints",
-    icon: Layout,
-    color: "#6366f1",
-  },
-];
+const ITEM_TYPE_HREF: Record<string, string> = {
+  SNIPPET: "/items/snippets",
+  RUNBOOK: "/items/runbooks",
+  SECRET_REF: "/items/secrets",
+  DOC: "/items/docs",
+  RESOURCE: "/items/resources",
+  ASSET: "/items/assets",
+  BLUEPRINT: "/items/blueprints",
+};
+
+const ITEM_TYPES = Object.entries(TYPE_CONFIG).map(([key, cfg]) => ({
+  label: cfg.plural,
+  href: ITEM_TYPE_HREF[key],
+  icon: cfg.icon,
+  color: cfg.color,
+}));
 
 const BOTTOM_NAV = [
   { label: "Settings", href: "/settings", icon: Settings },
@@ -64,13 +46,13 @@ function NavItem({
   icon: Icon,
   label,
   collapsed,
-  iconStyle,
+  iconColor,
 }: {
   href: string;
   icon: React.ElementType;
   label: string;
   collapsed: boolean;
-  iconStyle?: React.CSSProperties;
+  iconColor?: string;
 }) {
   return (
     <Link
@@ -81,7 +63,7 @@ function NavItem({
         collapsed && "justify-center px-0 mx-1",
       )}
     >
-      <Icon size={15} style={iconStyle} className="shrink-0" />
+      <Icon size={15} style={iconColor ? { color: iconColor } : undefined} className="shrink-0" />
       {!collapsed && <span>{label}</span>}
     </Link>
   );
@@ -260,7 +242,7 @@ function SidebarInner({
               icon={icon}
               label={label}
               collapsed={isCollapsed}
-              iconStyle={{ color }}
+              iconColor={color}
             />
           ))}
         </Section>

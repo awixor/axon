@@ -1,5 +1,3 @@
-"use client";
-
 import { Activity, Layers, Pin, ShieldCheck } from "lucide-react";
 import { type SpaceRow } from "@/lib/db/spaces";
 import { type ItemRow } from "@/lib/db/items";
@@ -17,7 +15,14 @@ type Props = {
   recentActivity: number;
 };
 
-export function DashboardMain({ spaces, pinnedItems, recentItems, totalItems, verifiedItems, recentActivity }: Props) {
+export function DashboardMain({
+  spaces,
+  pinnedItems,
+  recentItems,
+  totalItems,
+  verifiedItems,
+  recentActivity,
+}: Props) {
   return (
     <main className="flex-1 h-full overflow-auto">
       <div className="p-6 space-y-7">
