@@ -20,8 +20,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { currentUser } from "@/lib/mock-data";
 import { type SpaceRow } from "@/lib/db/spaces";
+import { type UserRow } from "@/lib/db/users";
 import { useSidebar } from "./SidebarContext";
 
 const ITEM_TYPES = [
@@ -149,9 +149,11 @@ function SpaceItem({
 function SidebarInner({
   isMobile = false,
   spaces,
+  user,
 }: {
   isMobile?: boolean;
   spaces: SpaceRow[];
+  user: UserRow | null;
 }) {
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
   const [spaceSearch, setSpaceSearch] = useState("");
@@ -284,15 +286,15 @@ function SidebarInner({
           )}
         >
           <div className="size-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0 select-none">
-            {currentUser.avatarInitials}
+            {user?.initials ?? "?"}
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium leading-tight truncate">
-                {currentUser.name}
+                {user?.name ?? "—"}
               </p>
               <p className="text-[11px] text-muted-foreground leading-tight truncate">
-                {currentUser.email}
+                {user?.email ?? "—"}
               </p>
             </div>
           )}
@@ -302,7 +304,7 @@ function SidebarInner({
   );
 }
 
-function DesktopSidebar({ spaces }: { spaces: SpaceRow[] }) {
+function DesktopSidebar({ spaces, user }: { spaces: SpaceRow[]; user: UserRow | null }) {
   const { collapsed } = useSidebar();
   return (
     <aside
@@ -311,12 +313,12 @@ function DesktopSidebar({ spaces }: { spaces: SpaceRow[] }) {
         collapsed ? "w-13" : "w-64",
       )}
     >
-      <SidebarInner spaces={spaces} />
+      <SidebarInner spaces={spaces} user={user} />
     </aside>
   );
 }
 
-function MobileDrawer({ spaces }: { spaces: SpaceRow[] }) {
+function MobileDrawer({ spaces, user }: { spaces: SpaceRow[]; user: UserRow | null }) {
   const { setMobileOpen } = useSidebar();
   return (
     <div className="md:hidden fixed inset-0 z-50 flex">
@@ -325,18 +327,18 @@ function MobileDrawer({ spaces }: { spaces: SpaceRow[] }) {
         onClick={() => setMobileOpen(false)}
       />
       <aside className="relative flex flex-col w-72 h-full bg-sidebar border-r border-sidebar-border">
-        <SidebarInner isMobile spaces={spaces} />
+        <SidebarInner isMobile spaces={spaces} user={user} />
       </aside>
     </div>
   );
 }
 
-export function Sidebar({ spaces }: { spaces: SpaceRow[] }) {
+export function Sidebar({ spaces, user }: { spaces: SpaceRow[]; user: UserRow | null }) {
   const { mobileOpen } = useSidebar();
   return (
     <>
-      <DesktopSidebar spaces={spaces} />
-      {mobileOpen && <MobileDrawer spaces={spaces} />}
+      <DesktopSidebar spaces={spaces} user={user} />
+      {mobileOpen && <MobileDrawer spaces={spaces} user={user} />}
     </>
   );
 }
