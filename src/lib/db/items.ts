@@ -70,9 +70,16 @@ export async function getPinnedItems(teamId: string): Promise<ItemRow[]> {
 
 export async function getItemCounts(
   teamId: string,
-): Promise<{ total: number }> {
-  const total = await prisma.item.count({
-    where: { teamId, deletedAt: null },
-  });
-  return { total };
+): Promise<{ total: number; verified: number; recentActivity: number }> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const [total, verified, recentActivity] = await Promise.all([
+    prisma.item.count({ where: { teamId, deletedAt: null } }),
+    prisma.item.count({ where: { teamId, deletedAt: null, isVerified: true } }),
+    prisma.item.count({
+      where: { teamId, deletedAt: null, updatedAt: { gte: since } },
+    }),
+  ]);
+
+  return { total, verified, recentActivity };
 }

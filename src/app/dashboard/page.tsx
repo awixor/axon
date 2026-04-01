@@ -3,12 +3,13 @@ import { getRecentSpaces } from "@/lib/db/spaces";
 import { getRecentItems, getPinnedItems, getItemCounts } from "@/lib/db/items";
 
 export default async function DashboardPage() {
-  const [spaces, recentItems, pinnedItems, { total }] = await Promise.all([
-    getRecentSpaces("team-demo"),
-    getRecentItems("team-demo"),
-    getPinnedItems("team-demo"),
-    getItemCounts("team-demo"),
-  ]);
+  const [spaces, recentItems, pinnedItems, { total, verified, recentActivity }] =
+    await Promise.all([
+      getRecentSpaces("team-demo"),
+      getRecentItems("team-demo"),
+      getPinnedItems("team-demo"),
+      getItemCounts("team-demo"),
+    ]);
 
   return (
     <DashboardMain
@@ -16,6 +17,8 @@ export default async function DashboardPage() {
       recentItems={recentItems}
       pinnedItems={pinnedItems}
       totalItems={total}
+      verifiedItems={verified}
+      recentActivity={recentActivity}
     />
   );
 }
