@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { type ItemRow } from "@/lib/db/items";
-import { type ItemType } from "@/lib/mock-data";
+import { type ItemType } from "@/types/items";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { FilterTab } from "@/components/dashboard/FilterTab";
@@ -14,7 +14,10 @@ export function RecentItems({ items }: { items: ItemRow[] }) {
     filter === "ALL" ? items : items.filter((i) => i.type === filter);
 
   const typeCounts = ITEM_TYPES.reduce(
-    (acc, type) => ({ ...acc, [type]: items.filter((i) => i.type === type).length }),
+    (acc, type) => ({
+      ...acc,
+      [type]: items.filter((i) => i.type === type).length,
+    }),
     {} as Record<ItemType, number>,
   );
 

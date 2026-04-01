@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Clock,
   Code2,
   FileText,
   Globe,
@@ -15,14 +14,14 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  Star,
   Terminal,
   Users,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { currentUser, spaces, type Space } from "@/lib/mock-data";
+import { currentUser } from "@/lib/mock-data";
+import { type SpaceRow } from "@/lib/db/spaces";
 import { useSidebar } from "./SidebarContext";
 
 const ITEM_TYPES = [
@@ -112,7 +111,13 @@ function Section({
   );
 }
 
-function SpaceItem({ space, collapsed }: { space: Space; collapsed: boolean }) {
+function SpaceItem({
+  space,
+  collapsed,
+}: {
+  space: SpaceRow;
+  collapsed: boolean;
+}) {
   return (
     <Link
       href={`/spaces/${space.id}`}
@@ -141,21 +146,23 @@ function SpaceItem({ space, collapsed }: { space: Space; collapsed: boolean }) {
   );
 }
 
-function SidebarInner({ isMobile = false }: { isMobile?: boolean }) {
+function SidebarInner({
+  isMobile = false,
+  spaces,
+}: {
+  isMobile?: boolean;
+  spaces: SpaceRow[];
+}) {
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
   const [spaceSearch, setSpaceSearch] = useState("");
 
   const isCollapsed = isMobile ? false : collapsed;
 
-  const favoriteSpaces = spaces.filter((s) => s.isFavorite);
-  const recentSpaces = spaces.filter((s) => !s.isFavorite);
-
-  const filterSpaces = (list: Space[]) =>
-    spaceSearch
-      ? list.filter((s) =>
-          s.name.toLowerCase().includes(spaceSearch.toLowerCase()),
-        )
-      : list;
+  const filteredSpaces = spaceSearch
+    ? spaces.filter((s) =>
+        s.name.toLowerCase().includes(spaceSearch.toLowerCase()),
+      )
+    : spaces;
 
   return (
     <div className="flex flex-col h-full">
@@ -217,8 +224,33 @@ function SidebarInner({ isMobile = false }: { isMobile?: boolean }) {
           collapsed={isCollapsed}
         />
 
+        {/* Spaces */}
+        <Section
+          label="SPACES"
+          icon={<Layout size={10} />}
+          collapsed={isCollapsed}
+        >
+          {filteredSpaces?.map((space) => (
+            <SpaceItem key={space.id} space={space} collapsed={isCollapsed} />
+          ))}
+          {!isCollapsed && (
+            <Link
+              href="/spaces"
+              className="flex items-center gap-2 mx-1.5 px-2 py-1.5 text-xs text-muted-foreground rounded hover:bg-sidebar-accent"
+            >
+              View all spaces
+            </Link>
+          )}
+        </Section>
+
+        <div className="border-t border-sidebar-border my-2" />
+
         {/* Item Types */}
-        <Section label="Types" collapsed={isCollapsed}>
+        <Section
+          label="TYPES"
+          icon={<Layout size={10} />}
+          collapsed={isCollapsed}
+        >
           {ITEM_TYPES.map(({ label, href, icon, color }) => (
             <NavItem
               key={href}
@@ -230,32 +262,6 @@ function SidebarInner({ isMobile = false }: { isMobile?: boolean }) {
             />
           ))}
         </Section>
-
-        {/* Favorite Spaces */}
-        {filterSpaces(favoriteSpaces).length > 0 && (
-          <Section
-            label="Favorites"
-            icon={<Star size={10} />}
-            collapsed={isCollapsed}
-          >
-            {filterSpaces(favoriteSpaces).map((space) => (
-              <SpaceItem key={space.id} space={space} collapsed={isCollapsed} />
-            ))}
-          </Section>
-        )}
-
-        {/* Recent Spaces */}
-        {filterSpaces(recentSpaces).length > 0 && (
-          <Section
-            label="Recent"
-            icon={<Clock size={10} />}
-            collapsed={isCollapsed}
-          >
-            {filterSpaces(recentSpaces).map((space) => (
-              <SpaceItem key={space.id} space={space} collapsed={isCollapsed} />
-            ))}
-          </Section>
-        )}
       </div>
 
       {/* Bottom */}
@@ -296,7 +302,7 @@ function SidebarInner({ isMobile = false }: { isMobile?: boolean }) {
   );
 }
 
-function DesktopSidebar() {
+function DesktopSidebar({ spaces }: { spaces: SpaceRow[] }) {
   const { collapsed } = useSidebar();
   return (
     <aside
@@ -305,12 +311,12 @@ function DesktopSidebar() {
         collapsed ? "w-13" : "w-64",
       )}
     >
-      <SidebarInner />
+      <SidebarInner spaces={spaces} />
     </aside>
   );
 }
 
-function MobileDrawer() {
+function MobileDrawer({ spaces }: { spaces: SpaceRow[] }) {
   const { setMobileOpen } = useSidebar();
   return (
     <div className="md:hidden fixed inset-0 z-50 flex">
@@ -319,18 +325,18 @@ function MobileDrawer() {
         onClick={() => setMobileOpen(false)}
       />
       <aside className="relative flex flex-col w-72 h-full bg-sidebar border-r border-sidebar-border">
-        <SidebarInner isMobile />
+        <SidebarInner isMobile spaces={spaces} />
       </aside>
     </div>
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ spaces }: { spaces: SpaceRow[] }) {
   const { mobileOpen } = useSidebar();
   return (
     <>
-      <DesktopSidebar />
-      {mobileOpen && <MobileDrawer />}
+      <DesktopSidebar spaces={spaces} />
+      {mobileOpen && <MobileDrawer spaces={spaces} />}
     </>
   );
 }

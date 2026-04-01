@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder, Layers, Pin } from "lucide-react";
+import { Activity, Layers, Pin, ShieldCheck } from "lucide-react";
 import { type SpaceRow } from "@/lib/db/spaces";
 import { type ItemRow } from "@/lib/db/items";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -13,9 +13,11 @@ type Props = {
   pinnedItems: ItemRow[];
   recentItems: ItemRow[];
   totalItems: number;
+  verifiedItems: number;
+  recentActivity: number;
 };
 
-export function DashboardMain({ spaces, pinnedItems, recentItems, totalItems }: Props) {
+export function DashboardMain({ spaces, pinnedItems, recentItems, totalItems, verifiedItems, recentActivity }: Props) {
   return (
     <main className="flex-1 h-full overflow-auto">
       <div className="p-6 space-y-7">
@@ -28,10 +30,16 @@ export function DashboardMain({ spaces, pinnedItems, recentItems, totalItems }: 
             color="#60a5fa"
           />
           <StatCard
-            label="Spaces"
-            value={spaces.length}
-            icon={Folder}
-            color="#a78bfa"
+            label="Verified Items"
+            value={verifiedItems}
+            icon={ShieldCheck}
+            color="#34d399"
+          />
+          <StatCard
+            label="Recent Activity"
+            value={recentActivity}
+            icon={Activity}
+            color="#f87171"
           />
         </div>
 
