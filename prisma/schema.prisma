@@ -97,6 +97,7 @@ model User {
   email          String?    @unique
   name           String?
   image          String?
+  password       String?
   emailVerified  DateTime?
   role           Role       @default(MEMBER)
   teamId         String?
