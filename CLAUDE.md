@@ -28,3 +28,9 @@ pnpm lint       # run ESLint
 - **Tailwind CSS v4** — uses `@import "tailwindcss"` (not `@tailwind` directives); theme customization goes in `@theme {}` blocks in CSS
 - **TypeScript 5**
 - **pnpm** as package manager
+
+## Neon MCP
+
+- Project ID: `dark-thunder-44552316`
+- **Always use the `development` branch (`br-muddy-bread-ablchyeh`) for all queries and operations**
+- **Never touch the `production` branch (`br-flat-heart-abule1ln`)**
