@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { GitHubIcon } from "@/components/icons";
@@ -17,7 +18,10 @@ export function SignInForm({ registered }: { registered?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (registered) toast.success("Account created! You can now sign in.", { id: "registered" });
+    if (registered)
+      toast.success("Account created! You can now sign in.", {
+        id: "registered",
+      });
   }, [registered]);
 
   async function handleCredentials(e: React.SubmitEvent) {
@@ -43,9 +47,21 @@ export function SignInForm({ registered }: { registered?: boolean }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Sign in to Axon</h1>
+    <div className="rounded-xl border border-border bg-card p-8 space-y-6 shadow-sm">
+      {/* Mobile logo */}
+      <div className="flex items-center gap-2.5 lg:hidden">
+        <div className="size-7 rounded bg-emerald-500 flex items-center justify-center shrink-0">
+          <span className="text-black text-[11px] font-bold font-mono leading-none">
+            AX
+          </span>
+        </div>
+        <span className="font-mono font-bold text-base tracking-widest uppercase">
+          Axon
+        </span>
+      </div>
+
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Your engineering knowledge hub
         </p>
@@ -53,11 +69,11 @@ export function SignInForm({ registered }: { registered?: boolean }) {
 
       <Button
         variant="outline"
-        className="w-full"
+        className="w-full cursor-pointer"
         onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
       >
         <GitHubIcon className="size-4" />
-        Sign in with GitHub
+        Continue with GitHub
       </Button>
 
       <div className="relative">
@@ -65,7 +81,9 @@ export function SignInForm({ registered }: { registered?: boolean }) {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
+          <span className="bg-card px-2 text-muted-foreground uppercase tracking-widest">
+            or
+          </span>
         </div>
       </div>
 
@@ -90,11 +108,28 @@ export function SignInForm({ registered }: { registered?: boolean }) {
         />
 
         {error && (
-          <p className="text-sm text-destructive-foreground">{error}</p>
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground"
+          >
+            <AlertCircle className="size-4 shrink-0" />
+            {error}
+          </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing in..." : "Sign in"}
+        <Button
+          type="submit"
+          className="w-full cursor-pointer"
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
         </Button>
       </form>
 
@@ -102,9 +137,9 @@ export function SignInForm({ registered }: { registered?: boolean }) {
         Don&apos;t have an account?{" "}
         <Link
           href="/register"
-          className="text-foreground underline underline-offset-4 hover:text-primary"
+          className="font-medium text-foreground underline underline-offset-4 hover:text-emerald-400 transition-colors"
         >
-          Register
+          Create one
         </Link>
       </p>
     </div>
