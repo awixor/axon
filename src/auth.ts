@@ -46,6 +46,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
+        // Block sign-in for unverified credential users
+        if (!user.emailVerified) return null;
+
         return {
           id: user.id,
           email: user.email,
