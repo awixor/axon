@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import { compare, hash } from "bcryptjs";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+
+const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required."),
+    newPassword: z.string().min(8, "New password must be at least 8 characters."),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 export async function POST(request: Request) {
   try {
@@ -12,28 +24,14 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword, confirmPassword } = body;
+    const parsed = ChangePasswordSchema.safeParse(body);
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return NextResponse.json(
-        { error: "All fields are required." },
-        { status: 400 },
-      );
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input.";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    if (newPassword !== confirmPassword) {
-      return NextResponse.json(
-        { error: "Passwords do not match." },
-        { status: 400 },
-      );
-    }
-
-    if (newPassword.length < 8) {
-      return NextResponse.json(
-        { error: "New password must be at least 8 characters." },
-        { status: 400 },
-      );
-    }
+    const { currentPassword, newPassword } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

@@ -1,27 +1,33 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
+
+const RegisterSchema = z
+  .object({
+    name: z.string().min(1, "Name is required."),
+    email: z.email("Invalid email address."),
+    password: z.string().min(8, "Password must be at least 8 characters."),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, confirmPassword } = body;
+    const parsed = RegisterSchema.safeParse(body);
 
-    if (!name || !email || !password || !confirmPassword) {
-      return NextResponse.json(
-        { error: "All fields are required." },
-        { status: 400 },
-      );
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input.";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        { error: "Passwords do not match." },
-        { status: 400 },
-      );
-    }
+    const { name, email, password } = parsed.data;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -36,9 +42,13 @@ export async function POST(request: Request) {
     const emailVerificationEnabled =
       process.env.EMAIL_VERIFICATION_ENABLED === "true";
 
-    const verificationToken = emailVerificationEnabled
+    const rawVerificationToken = emailVerificationEnabled
       ? randomBytes(32).toString("hex")
       : undefined;
+    const verificationToken =
+      rawVerificationToken !== undefined
+        ? createHash("sha256").update(rawVerificationToken).digest("hex")
+        : undefined;
     const verificationTokenExpiry = emailVerificationEnabled
       ? new Date(Date.now() + 24 * 60 * 60 * 1000)
       : undefined;
@@ -57,12 +67,13 @@ export async function POST(request: Request) {
     });
 
     if (emailVerificationEnabled) {
-      await sendVerificationEmail(email, verificationToken!);
+      await sendVerificationEmail(email, rawVerificationToken!);
     }
 
     return NextResponse.json(
       {
         success: true,
+        emailVerificationRequired: emailVerificationEnabled,
         user: { id: user.id, email: user.email, name: user.name },
       },
       { status: 201 },

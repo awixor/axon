@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -11,8 +12,10 @@ export async function GET(request: Request) {
     );
   }
 
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+
   const user = await prisma.user.findUnique({
-    where: { verificationToken: token },
+    where: { verificationToken: tokenHash },
     select: {
       id: true,
       emailVerified: true,

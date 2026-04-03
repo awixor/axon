@@ -11,10 +11,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  const [spaces, user] = await Promise.all([
-    getRecentSpaces("team-demo"),
-    session?.user?.id ? getUser(session.user.id) : Promise.resolve(null),
-  ]);
+  const user = session?.user?.id ? await getUser(session.user.id) : null;
+  const spaces = await getRecentSpaces(user?.teamId ?? "");
 
   return (
     <SidebarProvider>

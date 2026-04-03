@@ -41,7 +41,7 @@ export function RegisterForm() {
       return;
     }
 
-    router.push("/verify-email");
+    router.push(data.emailVerificationRequired ? "/verify-email" : "/login?registered=true");
   }
 
   return (
@@ -91,7 +91,7 @@ export function RegisterForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
         />
         <FormField
           id="confirmPassword"
@@ -101,7 +101,7 @@ export function RegisterForm() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
         />
 
         {error && (
