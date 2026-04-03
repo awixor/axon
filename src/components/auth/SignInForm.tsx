@@ -10,7 +10,15 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { GitHubIcon } from "@/components/icons";
 
-export function SignInForm({ registered }: { registered?: boolean }) {
+export function SignInForm({
+  registered,
+  verified,
+  error: urlError,
+}: {
+  registered?: boolean;
+  verified?: boolean;
+  error?: string;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,10 +27,18 @@ export function SignInForm({ registered }: { registered?: boolean }) {
 
   useEffect(() => {
     if (registered)
-      toast.success("Account created! You can now sign in.", {
+      toast.success("Account created! Check your email to verify.", {
         id: "registered",
       });
-  }, [registered]);
+    if (verified)
+      toast.success("Email verified! You can now sign in.", { id: "verified" });
+    if (urlError === "invalid_token" || urlError === "missing_token")
+      toast.error("Invalid or missing verification link.", { id: "token_err" });
+    if (urlError === "token_expired")
+      toast.error("Verification link expired. Please register again.", {
+        id: "token_expired",
+      });
+  }, [registered, verified, urlError]);
 
   async function handleCredentials(e: React.SubmitEvent) {
     e.preventDefault();

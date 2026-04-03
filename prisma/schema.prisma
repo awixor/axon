@@ -98,8 +98,10 @@ model User {
   name           String?
   image          String?
   password       String?
-  emailVerified  DateTime?
-  role           Role       @default(MEMBER)
+  emailVerified           DateTime?
+  verificationToken       String?   @unique
+  verificationTokenExpiry DateTime?
+  role                    Role      @default(MEMBER)
   teamId         String?
   team           Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
   itemsCreated   Item[]     @relation("ItemAuthor")
