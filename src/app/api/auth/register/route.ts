@@ -33,20 +33,32 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await hash(password, 12);
-    const verificationToken = randomBytes(32).toString("hex");
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const emailVerificationEnabled =
+      process.env.EMAIL_VERIFICATION_ENABLED === "true";
+
+    const verificationToken = emailVerificationEnabled
+      ? randomBytes(32).toString("hex")
+      : undefined;
+    const verificationTokenExpiry = emailVerificationEnabled
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+      : undefined;
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        verificationToken,
-        verificationTokenExpiry,
+        ...(emailVerificationEnabled && {
+          verificationToken,
+          verificationTokenExpiry,
+        }),
+        ...(!emailVerificationEnabled && { emailVerified: new Date() }),
       },
     });
 
-    await sendVerificationEmail(email, verificationToken);
+    if (emailVerificationEnabled) {
+      await sendVerificationEmail(email, verificationToken!);
+    }
 
     return NextResponse.json(
       {
