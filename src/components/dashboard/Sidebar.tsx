@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { UserMenu } from "@/components/dashboard/UserMenu";
 import { type SpaceRow } from "@/lib/db/spaces";
 import { type UserRow } from "@/lib/db/users";
 import { TYPE_CONFIG } from "@/lib/type-config";
@@ -93,13 +94,7 @@ function Section({
   );
 }
 
-function SpaceItem({
-  space,
-  collapsed,
-}: {
-  space: SpaceRow;
-  collapsed: boolean;
-}) {
+function SpaceItem({ space, collapsed }: { space: SpaceRow; collapsed: boolean }) {
   return (
     <Link
       href={`/spaces/${space.id}`}
@@ -110,18 +105,13 @@ function SpaceItem({
       )}
     >
       <span
-        className={cn(
-          "shrink-0 rounded-full",
-          collapsed ? "size-2.5" : "size-2",
-        )}
+        className={cn("shrink-0 rounded-full", collapsed ? "size-2.5" : "size-2")}
         style={{ backgroundColor: space.color }}
       />
       {!collapsed && (
         <>
           <span className="flex-1 truncate">{space.name}</span>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {space.itemCount}
-          </span>
+          <span className="text-xs text-muted-foreground tabular-nums">{space.itemCount}</span>
         </>
       )}
     </Link>
@@ -143,9 +133,7 @@ function SidebarInner({
   const isCollapsed = isMobile ? false : collapsed;
 
   const filteredSpaces = spaceSearch
-    ? spaces.filter((s) =>
-        s.name.toLowerCase().includes(spaceSearch.toLowerCase()),
-      )
+    ? spaces.filter((s) => s.name.toLowerCase().includes(spaceSearch.toLowerCase()))
     : spaces;
 
   return (
@@ -153,9 +141,7 @@ function SidebarInner({
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-sidebar-border shrink-0">
         {!isCollapsed && (
-          <span className="font-semibold text-sm flex-1 tracking-tight">
-            Axon
-          </span>
+          <span className="font-semibold text-sm flex-1 tracking-tight">Axon</span>
         )}
         {isMobile ? (
           <button
@@ -174,18 +160,13 @@ function SidebarInner({
             )}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {isCollapsed ? (
-              <ChevronRight size={15} />
-            ) : (
-              <ChevronLeft size={15} />
-            )}
+            {isCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           </button>
         )}
       </div>
 
       {/* Scrollable nav */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-2">
-        {/* Space search */}
         {!isCollapsed && (
           <div className="px-2 pb-2">
             <div className="relative">
@@ -200,20 +181,9 @@ function SidebarInner({
           </div>
         )}
 
-        {/* All Items */}
-        <NavItem
-          href="/dashboard"
-          icon={LayoutDashboard}
-          label="All Items"
-          collapsed={isCollapsed}
-        />
+        <NavItem href="/dashboard" icon={LayoutDashboard} label="All Items" collapsed={isCollapsed} />
 
-        {/* Spaces */}
-        <Section
-          label="SPACES"
-          icon={<Layout size={10} />}
-          collapsed={isCollapsed}
-        >
+        <Section label="SPACES" icon={<Layout size={10} />} collapsed={isCollapsed}>
           {filteredSpaces?.map((space) => (
             <SpaceItem key={space.id} space={space} collapsed={isCollapsed} />
           ))}
@@ -229,21 +199,9 @@ function SidebarInner({
 
         <div className="border-t border-sidebar-border my-2" />
 
-        {/* Item Types */}
-        <Section
-          label="TYPES"
-          icon={<Layout size={10} />}
-          collapsed={isCollapsed}
-        >
+        <Section label="TYPES" icon={<Layout size={10} />} collapsed={isCollapsed}>
           {ITEM_TYPES.map(({ label, href, icon, color }) => (
-            <NavItem
-              key={href}
-              href={href}
-              icon={icon}
-              label={label}
-              collapsed={isCollapsed}
-              iconColor={color}
-            />
+            <NavItem key={href} href={href} icon={icon} label={label} collapsed={isCollapsed} iconColor={color} />
           ))}
         </Section>
       </div>
@@ -251,36 +209,9 @@ function SidebarInner({
       {/* Bottom */}
       <div className="border-t border-sidebar-border pt-1 pb-1">
         {BOTTOM_NAV.map(({ label, href, icon }) => (
-          <NavItem
-            key={href}
-            href={href}
-            icon={icon}
-            label={label}
-            collapsed={isCollapsed}
-          />
+          <NavItem key={href} href={href} icon={icon} label={label} collapsed={isCollapsed} />
         ))}
-
-        {/* User area */}
-        <div
-          className={cn(
-            "flex items-center gap-2.5 mx-1.5 px-2 py-2 mt-0.5",
-            isCollapsed && "justify-center px-0 mx-1",
-          )}
-        >
-          <div className="size-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0 select-none">
-            {user?.initials ?? "?"}
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium leading-tight truncate">
-                {user?.name ?? "—"}
-              </p>
-              <p className="text-[11px] text-muted-foreground leading-tight truncate">
-                {user?.email ?? "—"}
-              </p>
-            </div>
-          )}
-        </div>
+        <UserMenu user={user} collapsed={isCollapsed} />
       </div>
     </div>
   );
@@ -304,10 +235,7 @@ function MobileDrawer({ spaces, user }: { spaces: SpaceRow[]; user: UserRow | nu
   const { setMobileOpen } = useSidebar();
   return (
     <div className="md:hidden fixed inset-0 z-50 flex">
-      <div
-        className="fixed inset-0 bg-black/60"
-        onClick={() => setMobileOpen(false)}
-      />
+      <div className="fixed inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
       <aside className="relative flex flex-col w-72 h-full bg-sidebar border-r border-sidebar-border">
         <SidebarInner isMobile spaces={spaces} user={user} />
       </aside>

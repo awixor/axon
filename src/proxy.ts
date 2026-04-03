@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
   const isOnDashboard = request.nextUrl.pathname.startsWith("/dashboard");
 
   if (isOnDashboard && !session) {
-    return NextResponse.redirect(new URL("/api/auth/signin", request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
