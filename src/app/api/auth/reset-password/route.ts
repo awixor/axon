@@ -1,35 +1,35 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { hash } from "bcryptjs";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+
+const ResetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "Token is required."),
+    password: z.string().min(8, "Password must be at least 8 characters."),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { token, password, confirmPassword } = body;
+    const parsed = ResetPasswordSchema.safeParse(body);
 
-    if (!token || !password || !confirmPassword) {
-      return NextResponse.json(
-        { error: "All fields are required." },
-        { status: 400 },
-      );
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input.";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        { error: "Passwords do not match." },
-        { status: 400 },
-      );
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 },
-      );
-    }
+    const { token, password } = parsed.data;
+    const tokenHash = createHash("sha256").update(token).digest("hex");
 
     const record = await prisma.verificationToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
     });
 
     if (!record || !record.identifier.startsWith("password-reset:")) {
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     if (record.expires < new Date()) {
-      await prisma.verificationToken.delete({ where: { token } });
+      await prisma.verificationToken.delete({ where: { token: tokenHash } });
       return NextResponse.json(
         { error: "Reset link has expired. Please request a new one." },
         { status: 400 },
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       data: { password: hashedPassword },
     });
 
-    await prisma.verificationToken.delete({ where: { token } });
+    await prisma.verificationToken.delete({ where: { token: tokenHash } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

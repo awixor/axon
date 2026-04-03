@@ -6,6 +6,7 @@ export type UserRow = {
   email: string;
   image: string | null;
   initials: string;
+  teamId: string | null;
 };
 
 export type ProfileData = {
@@ -24,7 +25,7 @@ export type ProfileData = {
 export async function getUser(userId: string): Promise<UserRow | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, image: true },
+    select: { id: true, name: true, email: true, image: true, teamId: true },
   });
 
   if (!user) return null;
@@ -43,6 +44,7 @@ export async function getUser(userId: string): Promise<UserRow | null> {
     email: user.email ?? "",
     image: user.image ?? null,
     initials,
+    teamId: user.teamId,
   };
 }
 

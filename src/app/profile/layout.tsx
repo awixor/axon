@@ -15,10 +15,8 @@ export default async function ProfileLayout({
 
   if (!session?.user?.id) redirect("/login");
 
-  const [spaces, user] = await Promise.all([
-    getRecentSpaces("team-demo"),
-    getUser(session.user.id),
-  ]);
+  const user = await getUser(session.user.id);
+  const spaces = await getRecentSpaces(user?.teamId ?? "");
 
   return (
     <SidebarProvider>
