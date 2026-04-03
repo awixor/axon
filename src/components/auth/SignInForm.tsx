@@ -13,10 +13,12 @@ import { GitHubIcon } from "@/components/icons";
 export function SignInForm({
   registered,
   verified,
+  reset,
   error: urlError,
 }: {
   registered?: boolean;
   verified?: boolean;
+  reset?: boolean;
   error?: string;
 }) {
   const router = useRouter();
@@ -32,13 +34,15 @@ export function SignInForm({
       });
     if (verified)
       toast.success("Email verified! You can now sign in.", { id: "verified" });
+    if (reset)
+      toast.success("Password reset! You can now sign in.", { id: "reset" });
     if (urlError === "invalid_token" || urlError === "missing_token")
       toast.error("Invalid or missing verification link.", { id: "token_err" });
     if (urlError === "token_expired")
       toast.error("Verification link expired. Please register again.", {
         id: "token_expired",
       });
-  }, [registered, verified, urlError]);
+  }, [registered, verified, reset, urlError]);
 
   async function handleCredentials(e: React.SubmitEvent) {
     e.preventDefault();
@@ -113,15 +117,25 @@ export function SignInForm({
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <FormField
-          id="password"
-          label="Password"
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="space-y-1.5">
+          <FormField
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <div className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </div>
 
         {error && (
           <div
