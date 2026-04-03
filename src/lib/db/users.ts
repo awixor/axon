@@ -4,13 +4,14 @@ export type UserRow = {
   id: string;
   name: string;
   email: string;
+  image: string | null;
   initials: string;
 };
 
 export async function getUser(userId: string): Promise<UserRow | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, image: true },
   });
 
   if (!user) return null;
@@ -27,6 +28,7 @@ export async function getUser(userId: string): Promise<UserRow | null> {
     id: user.id,
     name,
     email: user.email ?? "",
+    image: user.image ?? null,
     initials,
   };
 }

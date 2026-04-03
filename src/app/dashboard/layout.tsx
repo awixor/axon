@@ -1,18 +1,20 @@
-import { Sidebar } from '@/components/dashboard/Sidebar'
-import { SidebarProvider } from '@/components/dashboard/SidebarContext'
-import { TopBar } from '@/components/dashboard/TopBar'
-import { getRecentSpaces } from '@/lib/db/spaces'
-import { getUser } from '@/lib/db/users'
+import { auth } from "@/auth";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { SidebarProvider } from "@/components/dashboard/SidebarContext";
+import { TopBar } from "@/components/dashboard/TopBar";
+import { getRecentSpaces } from "@/lib/db/spaces";
+import { getUser } from "@/lib/db/users";
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
+  const session = await auth();
   const [spaces, user] = await Promise.all([
-    getRecentSpaces('team-demo'),
-    getUser('user-demo'),
-  ])
+    getRecentSpaces("team-demo"),
+    session?.user?.id ? getUser(session.user.id) : Promise.resolve(null),
+  ]);
 
   return (
     <SidebarProvider>
@@ -24,5 +26,5 @@ export default async function DashboardLayout({
         </div>
       </div>
     </SidebarProvider>
-  )
+  );
 }
