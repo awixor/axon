@@ -9,6 +9,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { GitHubIcon } from "@/components/icons";
+import { signInWithGitHub } from "@/actions/auth";
 
 export function SignInForm({
   registered,
@@ -91,14 +92,12 @@ export function SignInForm({
         </p>
       </div>
 
-      <Button
-        variant="outline"
-        className="w-full cursor-pointer"
-        onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-      >
-        <GitHubIcon className="size-4" />
-        Continue with GitHub
-      </Button>
+      <form action={signInWithGitHub}>
+        <Button variant="outline" type="submit" className="w-full cursor-pointer">
+          <GitHubIcon className="size-4" />
+          Continue with GitHub
+        </Button>
+      </form>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
