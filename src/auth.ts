@@ -1,9 +1,14 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "./auth.config";
+import { checkLoginRateLimit, getIp } from "@/lib/rate-limit";
+
+class RateLimitError extends CredentialsSignin {
+  code = "rate_limited";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -32,11 +37,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = credentials.email as string | undefined;
         const password = credentials.password as string | undefined;
 
         if (!email || !password) return null;
+
+        const rl = await checkLoginRateLimit(getIp(request as Request), email);
+        if (!rl.success) throw new RateLimitError();
 
         const user = await prisma.user.findUnique({ where: { email } });
 

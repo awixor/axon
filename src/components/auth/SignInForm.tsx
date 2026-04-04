@@ -58,7 +58,11 @@ export function SignInForm({
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password.");
+      if (result.code === "rate_limited") {
+        setError("Too many attempts. Please wait before trying again.");
+      } else {
+        setError("Invalid email or password.");
+      }
       return;
     }
 

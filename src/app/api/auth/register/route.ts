@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { randomBytes, createHash } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
+import { checkRegisterRateLimit, getIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const RegisterSchema = z
   .object({
@@ -17,7 +18,9 @@ const RegisterSchema = z
     path: ["confirmPassword"],
   });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rateLimit = await checkRegisterRateLimit(getIp(request));
+  if (!rateLimit.success) return rateLimitResponse(rateLimit.reset);
   try {
     const body = await request.json();
     const parsed = RegisterSchema.safeParse(body);
