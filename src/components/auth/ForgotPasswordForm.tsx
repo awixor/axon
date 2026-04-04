@@ -12,7 +12,7 @@ export function ForgotPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setLoading(true);
 
@@ -22,10 +22,11 @@ export function ForgotPasswordForm() {
       body: JSON.stringify({ email }),
     });
 
+    const data = await res.json();
     setLoading(false);
 
     if (!res.ok) {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(data.error ?? "Something went wrong. Please try again.");
       return;
     }
 
@@ -36,9 +37,12 @@ export function ForgotPasswordForm() {
     return (
       <div className="rounded-xl border border-border bg-card p-8 space-y-4 shadow-sm">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Check your email
+          </h1>
           <p className="text-sm text-muted-foreground">
-            If an account exists for <span className="text-foreground font-medium">{email}</span>,
+            If an account exists for{" "}
+            <span className="text-foreground font-medium">{email}</span>,
             you&apos;ll receive a password reset link shortly.
           </p>
         </div>
@@ -87,7 +91,11 @@ export function ForgotPasswordForm() {
           required
         />
 
-        <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
+        <Button
+          type="submit"
+          className="w-full cursor-pointer"
+          disabled={loading}
+        >
           {loading ? (
             <>
               <Loader2 className="size-4 animate-spin" />

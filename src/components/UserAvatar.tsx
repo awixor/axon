@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 function getInitials(name: string): string {
@@ -22,13 +23,12 @@ export function UserAvatar({
 
   if (image) {
     return (
-      <img
+      <Image
         src={image}
         alt={name ?? "User avatar"}
-        className={cn(
-          "size-7 rounded-full object-cover",
-          className,
-        )}
+        width={28}
+        height={28}
+        className={cn("size-7 rounded-full object-cover", className)}
       />
     );
   }

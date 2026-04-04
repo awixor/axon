@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { checkResetPasswordRateLimit, getIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const ResetPasswordSchema = z
   .object({
@@ -15,7 +16,9 @@ const ResetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rl = await checkResetPasswordRateLimit(getIp(request));
+  if (!rl.success) return rateLimitResponse(rl.reset);
   try {
     const body = await request.json();
     const parsed = ResetPasswordSchema.safeParse(body);
