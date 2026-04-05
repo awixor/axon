@@ -17,7 +17,7 @@ export default async function ItemListPage({
 
   const session = await getSession();
   const user = session?.user?.id ? await getUser(session.user.id) : null;
-  const items = await getItemsByType(user?.teamId ?? "team-demo", itemType);
+  const items = await getItemsByType(user?.teamId ?? "", itemType);
 
   const config = TYPE_CONFIG[itemType];
   const Icon = config.icon;
