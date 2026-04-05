@@ -62,3 +62,13 @@ export const TYPE_CONFIG: Record<ItemType, TypeConfig> = {
 };
 
 export const ITEM_TYPES = Object.keys(TYPE_CONFIG) as ItemType[];
+
+export const ITEM_TYPE_BY_SLUG: Record<string, ItemType> = {
+  snippets: "SNIPPET",
+  runbooks: "RUNBOOK",
+  secrets: "SECRET_REF",
+  docs: "DOC",
+  resources: "RESOURCE",
+  assets: "ASSET",
+  blueprints: "BLUEPRINT",
+};

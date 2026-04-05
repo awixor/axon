@@ -6,16 +6,15 @@ import { TopBar } from "@/components/dashboard/TopBar";
 import { getRecentSpaces } from "@/lib/db/spaces";
 import { getUser } from "@/lib/db/users";
 
-export default async function ProfileLayout({
+export default async function ItemsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const session = await getSession();
+  if (!session) redirect("/login");
 
-  if (!session?.user?.id) redirect("/login");
-
-  const user = await getUser(session.user.id);
+  const user = session?.user?.id ? await getUser(session.user.id) : null;
   const spaces = await getRecentSpaces(user?.teamId ?? "");
 
   return (

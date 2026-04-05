@@ -5,9 +5,11 @@ import { auth } from "./auth";
 export async function proxy(request: NextRequest) {
   const session = await auth();
 
-  const isOnDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+  const { pathname } = request.nextUrl;
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/items");
 
-  if (isOnDashboard && !session) {
+  if (isProtected && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -15,5 +17,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/items/:path*"],
 };

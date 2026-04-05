@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 import { CalendarDays, Layers, Package } from "lucide-react";
 import { getProfileData } from "@/lib/db/users";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
@@ -17,7 +17,7 @@ function formatDate(iso: string) {
 }
 
 export default async function ProfilePage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user?.id) redirect("/login");
 

@@ -68,6 +68,28 @@ export async function getPinnedItems(teamId: string): Promise<ItemRow[]> {
   }));
 }
 
+export async function getItemsByType(
+  teamId: string,
+  type: ItemType,
+): Promise<ItemRow[]> {
+  const items = await prisma.item.findMany({
+    where: { teamId, type, deletedAt: null },
+    orderBy: { updatedAt: "desc" },
+    select: itemSelect,
+  });
+
+  return items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    type: item.type as ItemType,
+    content: item.content,
+    isVerified: item.isVerified,
+    isPinned: false,
+    authorName: item.author.name ?? "Unknown",
+    updatedAt: item.updatedAt.toISOString(),
+  }));
+}
+
 export async function getItemCounts(
   teamId: string,
 ): Promise<{ total: number; verified: number; recentActivity: number }> {
