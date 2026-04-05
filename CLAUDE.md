@@ -16,9 +16,12 @@ Read the following files to get a better understanding of the project:
 ## Commands
 
 ```bash
-pnpm dev        # start dev server
-pnpm build      # production build
-pnpm lint       # run ESLint
+pnpm dev             # start dev server
+pnpm build           # production build
+pnpm lint            # run ESLint
+pnpm test            # run tests in watch mode
+pnpm test:run        # run tests once (CI)
+pnpm test:coverage   # run tests with coverage report
 ```
 
 ## Stack
