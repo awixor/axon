@@ -1,5 +1,19 @@
 import { prisma } from "@/lib/prisma";
 
+export type SpaceOption = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+export async function getAllSpaces(teamId: string): Promise<SpaceOption[]> {
+  return prisma.space.findMany({
+    where: { teamId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, color: true },
+  });
+}
+
 export type SpaceRow = {
   id: string;
   name: string;

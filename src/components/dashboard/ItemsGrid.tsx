@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic } from "react";
 import { type ItemRow, type ItemDetail } from "@/lib/db/items";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { ItemDrawer } from "@/components/dashboard/ItemDrawer";
@@ -11,7 +11,10 @@ type Props = {
 };
 
 export function ItemsGrid({ items, emptyMessage = "No items found." }: Props) {
-  const [localItems, setLocalItems] = useState(items);
+  const [optimisticItems, removeOptimisticItem] = useOptimistic(
+    items,
+    (current, deletedId: string) => current.filter((i) => i.id !== deletedId),
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [itemDetail, setItemDetail] = useState<ItemDetail | null>(null);
@@ -53,13 +56,13 @@ export function ItemsGrid({ items, emptyMessage = "No items found." }: Props) {
   }
 
   function handleItemDeleted(itemId: string) {
-    setLocalItems((prev) => prev.filter((i) => i.id !== itemId));
+    removeOptimisticItem(itemId);
   }
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {localItems.map((item) => (
+        {optimisticItems.map((item) => (
           <ItemCard
             key={item.id}
             item={item}
@@ -67,7 +70,7 @@ export function ItemsGrid({ items, emptyMessage = "No items found." }: Props) {
             onClick={() => handleCardClick(item.id)}
           />
         ))}
-        {localItems.length === 0 && (
+        {optimisticItems.length === 0 && (
           <p className="text-xs text-muted-foreground col-span-3 py-4">
             {emptyMessage}
           </p>
