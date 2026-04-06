@@ -22,8 +22,19 @@ import { type ItemDetail } from "@/lib/db/items";
 import { TYPE_CONFIG } from "@/lib/type-config";
 import { ItemContent } from "@/components/dashboard/ItemContent";
 import { relativeTime } from "@/lib/utils/time";
-import { updateItem } from "@/actions/items";
+import { updateItem, deleteItem } from "@/actions/items";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ActionBtn,
   DrawerSkeleton,
@@ -37,6 +48,7 @@ type Props = {
   loading: boolean;
   error?: boolean;
   onItemSaved?: (item: ItemDetail) => void;
+  onItemDeleted?: (itemId: string) => void;
 };
 
 export function ItemDrawer({
@@ -46,12 +58,15 @@ export function ItemDrawer({
   loading,
   error,
   onItemSaved,
+  onItemDeleted,
 }: Props) {
   const router = useRouter();
   const [starred, setStarred] = useState(false);
   const [copied, setCopied] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
@@ -90,6 +105,22 @@ export function ItemDrawer({
     setEditMode(true);
   }
 
+  async function handleDelete() {
+    if (!item) return;
+    setDeleting(true);
+    const result = await deleteItem(item.id);
+    setDeleting(false);
+    if (result.success) {
+      toast.success("Item deleted");
+      setDeleteDialogOpen(false);
+      onItemDeleted?.(item.id);
+      onOpenChange(false);
+      router.refresh();
+    } else {
+      toast.error(typeof result.error === "string" ? result.error : "Failed to delete item");
+    }
+  }
+
   async function handleSave() {
     if (!item || !editTitle.trim()) return;
     setSaving(true);
@@ -121,11 +152,48 @@ export function ItemDrawer({
   }
 
   return (
+    <>
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent
+        size="sm"
+        className="gap-5 p-5 bg-background border border-border/60 shadow-2xl"
+      >
+        <AlertDialogHeader className="gap-3">
+          <AlertDialogMedia className="size-10 rounded-lg bg-destructive/10 text-destructive border border-destructive/20">
+            <Trash2 size={18} />
+          </AlertDialogMedia>
+          <AlertDialogTitle className="text-sm font-semibold tracking-tight">
+            Delete item
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-mono text-foreground/80 bg-muted px-1.5 py-0.5 rounded text-[11px] break-all">
+              {item?.title}
+            </span>{" "}
+            will be permanently deleted. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel
+            disabled={deleting}
+            className="text-xs h-8"
+          >
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-xs h-8 bg-destructive text-white hover:bg-destructive/90 border-0 shadow-none"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
         showCloseButton={true}
-        className="w-full sm:max-w-lg flex flex-col gap-0 p-0"
+        className="w-full sm:max-w-2xl flex flex-col gap-0 p-0"
       >
         {error ? (
           <div className="flex flex-col items-center justify-center flex-1 gap-2 p-8 text-center">
@@ -220,7 +288,7 @@ export function ItemDrawer({
                   <div className="flex-1" />
 
                   <ActionBtn
-                    onClick={() => {}}
+                    onClick={() => setDeleteDialogOpen(true)}
                     label="Delete"
                     className="text-destructive hover:text-destructive"
                   >
@@ -274,5 +342,6 @@ export function ItemDrawer({
         )}
       </SheetContent>
     </Sheet>
+    </>
   );
 }
