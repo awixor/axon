@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { InputJsonValue } from "@prisma/client/runtime/client";
 import { type ItemType } from "@/types/items";
 
 export type ItemDetail = {
@@ -146,6 +147,45 @@ export async function getItemById(
     updatedAt: item.updatedAt.toISOString(),
     spaces: item.spaces.map((s) => s.space),
   };
+}
+
+export type UpdateItemFields = {
+  title: string;
+  content?: string;
+  metadata?: Record<string, unknown>;
+};
+
+async function getItemRawMetadata(
+  id: string,
+  teamId: string,
+): Promise<Record<string, unknown>> {
+  const item = await prisma.item.findFirst({
+    where: { id, teamId, deletedAt: null },
+    select: { metadata: true },
+  });
+  return (item?.metadata as Record<string, unknown>) ?? {};
+}
+
+export { getItemRawMetadata };
+
+export async function updateItem(
+  id: string,
+  teamId: string,
+  fields: UpdateItemFields,
+): Promise<ItemDetail | null> {
+  const result = await prisma.item.updateMany({
+    where: { id, teamId, deletedAt: null },
+    data: {
+      title: fields.title,
+      ...(fields.content !== undefined && { content: fields.content }),
+      ...(fields.metadata !== undefined && {
+        metadata: fields.metadata as InputJsonValue,
+      }),
+    },
+  });
+
+  if (result.count === 0) return null;
+  return getItemById(id, teamId);
 }
 
 export async function getItemCounts(
