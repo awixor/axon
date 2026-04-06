@@ -6,6 +6,7 @@ export type ItemDetail = {
   title: string;
   type: ItemType;
   content: string;
+  language?: string;
   isVerified: boolean;
   authorName: string;
   lastEditedByName: string | null;
@@ -114,6 +115,7 @@ export async function getItemById(
       title: true,
       type: true,
       content: true,
+      metadata: true,
       isVerified: true,
       createdAt: true,
       updatedAt: true,
@@ -129,11 +131,14 @@ export async function getItemById(
 
   if (!item) return null;
 
+  const meta = item.metadata as Record<string, unknown> | null;
+
   return {
     id: item.id,
     title: item.title,
     type: item.type as ItemType,
     content: item.content,
+    language: typeof meta?.language === "string" ? meta.language : undefined,
     isVerified: item.isVerified,
     authorName: item.author.name ?? "Unknown",
     lastEditedByName: item.lastEditedBy?.name ?? null,

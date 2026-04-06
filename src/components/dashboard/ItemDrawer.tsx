@@ -18,6 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { type ItemDetail } from "@/lib/db/items";
 import { TYPE_CONFIG } from "@/lib/type-config";
+import { ItemContent } from "@/components/dashboard/ItemContent";
 import { relativeTime } from "@/lib/utils/time";
 import { cn } from "@/lib/utils";
 
@@ -112,9 +113,7 @@ export function ItemDrawer({ open, onOpenChange, item, loading, error }: Props) 
 
             {/* Content area */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {item.content}
-              </pre>
+              <ItemContent item={item} />
             </div>
 
             {/* Action bar */}
