@@ -188,6 +188,17 @@ export async function updateItem(
   return getItemById(id, teamId);
 }
 
+export async function softDeleteItem(
+  id: string,
+  teamId: string,
+): Promise<boolean> {
+  const result = await prisma.item.updateMany({
+    where: { id, teamId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return result.count > 0;
+}
+
 export async function getItemCounts(
   teamId: string,
 ): Promise<{ total: number; verified: number; recentActivity: number }> {

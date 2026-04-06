@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { auth } from "@/auth";
 import { getUser } from "@/lib/db/users";
-import { updateItem as dbUpdateItem, getItemRawMetadata } from "@/lib/db/items";
+import { updateItem as dbUpdateItem, getItemRawMetadata, softDeleteItem } from "@/lib/db/items";
 import { ITEM_TYPES } from "@/lib/type-config";
 
 const updateItemSchema = z
@@ -95,4 +95,23 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
   }
 
   return { success: true as const, data: updated };
+}
+
+export async function deleteItem(itemId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false as const, error: "Not authenticated" };
+  }
+
+  const user = await getUser(session.user.id);
+  if (!user?.teamId) {
+    return { success: false as const, error: "User not found" };
+  }
+
+  const deleted = await softDeleteItem(itemId, user.teamId);
+  if (!deleted) {
+    return { success: false as const, error: "Item not found or already deleted" };
+  }
+
+  return { success: true as const };
 }
