@@ -13,11 +13,13 @@ vi.mock("@/lib/db/users", () => ({
 const mockGetItemRawMetadata = vi.fn().mockResolvedValue({});
 const mockDbUpdateItem = vi.fn();
 const mockSoftDeleteItem = vi.fn().mockResolvedValue(true);
+const mockInsertItem = vi.fn().mockResolvedValue({ id: "item-new", title: "T", type: "SNIPPET" });
 
 vi.mock("@/lib/db/items", () => ({
   getItemRawMetadata: mockGetItemRawMetadata,
   updateItem: mockDbUpdateItem,
   softDeleteItem: mockSoftDeleteItem,
+  insertItem: mockInsertItem,
 }));
 
 vi.mock("@/lib/type-config", () => ({
@@ -33,7 +35,7 @@ vi.mock("@/lib/type-config", () => ({
 }));
 
 // Import after mocks
-const { updateItem, deleteItem } = await import("@/actions/items");
+const { updateItem, deleteItem, createItem } = await import("@/actions/items");
 const { auth } = await import("@/auth");
 const { getUser } = await import("@/lib/db/users");
 
@@ -46,8 +48,153 @@ beforeEach(() => {
   mockDbUpdateItem.mockResolvedValue(updatedItem);
   mockGetItemRawMetadata.mockResolvedValue({});
   mockSoftDeleteItem.mockResolvedValue(true);
+  mockInsertItem.mockResolvedValue({ id: "item-new", title: "T", type: "SNIPPET" });
   vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as never);
   vi.mocked(getUser).mockResolvedValue({ id: "user-1", teamId: "team-1" } as never);
+});
+
+// ─── createItem ───────────────────────────────────────────────────────────────
+
+describe("createItem — auth guards", () => {
+  it("returns error when not authenticated", async () => {
+    vi.mocked(auth).mockResolvedValueOnce(null as never);
+    const result = await createItem({ type: "DOC", title: "T", content: "c" });
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/not authenticated/i);
+    expect(mockInsertItem).not.toHaveBeenCalled();
+  });
+
+  it("returns error when user has no teamId", async () => {
+    vi.mocked(getUser).mockResolvedValueOnce(null);
+    const result = await createItem({ type: "DOC", title: "T", content: "c" });
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/user not found/i);
+    expect(mockInsertItem).not.toHaveBeenCalled();
+  });
+});
+
+describe("createItem — validation", () => {
+  it("returns error when title is empty", async () => {
+    const result = await createItem({ type: "DOC", title: "  ", content: "c" });
+    expect(result.success).toBe(false);
+    if (!result.success && typeof result.error !== "string") {
+      expect(result.error.title).toBeDefined();
+    }
+  });
+
+  it("returns error when SNIPPET content is empty", async () => {
+    const result = await createItem({ type: "SNIPPET", title: "T", content: "" });
+    expect(result.success).toBe(false);
+    if (!result.success && typeof result.error !== "string") {
+      expect(result.error.content).toBeDefined();
+    }
+  });
+
+  it("returns error when RESOURCE url is missing", async () => {
+    const result = await createItem({ type: "RESOURCE", title: "T" });
+    expect(result.success).toBe(false);
+    if (!result.success && typeof result.error !== "string") {
+      expect(result.error.url).toBeDefined();
+    }
+  });
+
+  it("returns error when RESOURCE url is invalid", async () => {
+    const result = await createItem({ type: "RESOURCE", title: "T", url: "not-a-url" });
+    expect(result.success).toBe(false);
+    if (!result.success && typeof result.error !== "string") {
+      expect(result.error.url).toBeDefined();
+    }
+  });
+});
+
+describe("createItem — content assembly", () => {
+  it("calls insertItem with correct fields for SNIPPET", async () => {
+    const result = await createItem({
+      type: "SNIPPET",
+      title: "My snippet",
+      content: "const x = 1",
+      language: "typescript",
+    });
+    expect(result.success).toBe(true);
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "SNIPPET",
+        content: "const x = 1",
+        metadata: { language: "typescript" },
+        authorId: "user-1",
+        teamId: "team-1",
+      }),
+    );
+  });
+
+  it("sets language to null when not provided for SNIPPET", async () => {
+    await createItem({ type: "SNIPPET", title: "T", content: "x = 1" });
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: { language: null } }),
+    );
+  });
+
+  it("assembles RESOURCE content as URL line + notes", async () => {
+    await createItem({
+      type: "RESOURCE",
+      title: "Link",
+      url: "https://example.com",
+      notes: "Some notes",
+    });
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "URL: https://example.com\nSome notes",
+        metadata: { url: "https://example.com" },
+      }),
+    );
+  });
+
+  it("assembles RESOURCE content without notes", async () => {
+    await createItem({ type: "RESOURCE", title: "Link", url: "https://example.com" });
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({ content: "URL: https://example.com" }),
+    );
+  });
+
+  it("assembles SECRET_REF content from key/value pairs", async () => {
+    await createItem({
+      type: "SECRET_REF",
+      title: "Creds",
+      secretPairs: [
+        { key: "API_KEY", value: "abc123" },
+        { key: "SECRET", value: "xyz" },
+      ],
+    });
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({ content: "API_KEY: abc123\nSECRET: xyz" }),
+    );
+  });
+
+  it("skips SECRET_REF pairs with empty keys", async () => {
+    await createItem({
+      type: "SECRET_REF",
+      title: "Creds",
+      secretPairs: [
+        { key: "", value: "ignored" },
+        { key: "KEY", value: "val" },
+      ],
+    });
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({ content: "KEY: val" }),
+    );
+  });
+
+  it("passes spaceIds through to insertItem", async () => {
+    await createItem({
+      type: "DOC",
+      title: "T",
+      content: "c",
+      spaceIds: ["space-1", "space-2"],
+    });
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({ spaceIds: ["space-1", "space-2"] }),
+    );
+  });
 });
 
 // ─── Validation ───────────────────────────────────────────────────────────────

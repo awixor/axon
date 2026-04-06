@@ -37,6 +37,49 @@ const itemSelect = {
   author: { select: { name: true } },
 } as const;
 
+export type CreateItemFields = {
+  title: string;
+  type: ItemType;
+  content: string;
+  metadata?: Record<string, unknown> | null;
+  authorId: string;
+  teamId: string;
+  spaceIds?: string[];
+};
+
+export async function insertItem(fields: CreateItemFields): Promise<ItemRow> {
+  const item = await prisma.item.create({
+    data: {
+      title: fields.title,
+      type: fields.type,
+      content: fields.content,
+      ...(fields.metadata ? { metadata: fields.metadata as InputJsonValue } : {}),
+      authorId: fields.authorId,
+      lastEditedById: fields.authorId,
+      teamId: fields.teamId,
+    },
+    select: itemSelect,
+  });
+
+  if (fields.spaceIds?.length) {
+    await prisma.itemSpace.createMany({
+      data: fields.spaceIds.map((spaceId) => ({ itemId: item.id, spaceId })),
+      skipDuplicates: true,
+    });
+  }
+
+  return {
+    id: item.id,
+    title: item.title,
+    type: item.type as ItemType,
+    content: item.content,
+    isVerified: item.isVerified,
+    isPinned: false,
+    authorName: item.author.name ?? "Unknown",
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
 export async function getRecentItems(
   teamId: string,
   limit: number = 12,

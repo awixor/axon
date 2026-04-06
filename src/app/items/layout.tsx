@@ -3,7 +3,7 @@ import { getSession } from "@/lib/session";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { SidebarProvider } from "@/components/dashboard/SidebarContext";
 import { TopBar } from "@/components/dashboard/TopBar";
-import { getRecentSpaces } from "@/lib/db/spaces";
+import { getRecentSpaces, getAllSpaces } from "@/lib/db/spaces";
 import { getUser } from "@/lib/db/users";
 
 export default async function ItemsLayout({
@@ -15,14 +15,18 @@ export default async function ItemsLayout({
   if (!session) redirect("/login");
 
   const user = session?.user?.id ? await getUser(session.user.id) : null;
-  const spaces = await getRecentSpaces(user?.teamId ?? "");
+  const teamId = user?.teamId ?? "";
+  const [spaces, allSpaces] = await Promise.all([
+    getRecentSpaces(teamId),
+    getAllSpaces(teamId),
+  ]);
 
   return (
     <SidebarProvider>
       <div className="flex h-full">
         <Sidebar spaces={spaces} user={user} />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <TopBar />
+          <TopBar spaces={allSpaces} />
           <div className="flex-1 overflow-hidden">{children}</div>
         </div>
       </div>
