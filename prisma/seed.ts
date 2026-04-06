@@ -100,6 +100,8 @@ async function main() {
     title: string;
     type: ItemType;
     content: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata?: any;
     isVerified: boolean;
     spaceIds: string[];
   }[] = [
@@ -238,6 +240,7 @@ Rate limit: 1000 req/min on Team-Pro plan.`,
       id: "item-general-error-snippet",
       title: "Reusable Error Handling Pattern",
       type: ItemType.SNIPPET,
+      metadata: { language: "typescript" },
       content: `// src/lib/errors.ts
 export class AppError extends Error {
   constructor(
