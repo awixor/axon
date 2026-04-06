@@ -3,7 +3,7 @@ import { getSession } from "@/lib/session";
 import { getUser } from "@/lib/db/users";
 import { getItemsByType } from "@/lib/db/items";
 import { ITEM_TYPE_BY_SLUG, TYPE_CONFIG } from "@/lib/type-config";
-import { ItemCard } from "@/components/dashboard/ItemCard";
+import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
 
 export default async function ItemListPage({
   params,
@@ -33,11 +33,7 @@ export default async function ItemListPage({
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">No {config.plural.toLowerCase()} yet.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        <ItemsGrid items={items} />
       )}
     </div>
   );
