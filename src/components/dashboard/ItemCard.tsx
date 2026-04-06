@@ -3,12 +3,21 @@ import { type ItemRow } from "@/lib/db/items";
 import { TYPE_CONFIG } from "@/lib/type-config";
 import { relativeTime } from "@/lib/utils/time";
 
-export function ItemCard({ item }: { item: ItemRow }) {
+type Props = {
+  item: ItemRow;
+  onClick?: () => void;
+  selected?: boolean;
+};
+
+export function ItemCard({ item, onClick, selected }: Props) {
   const config = TYPE_CONFIG[item.type];
   const Icon = config.icon;
 
   return (
-    <div className="relative rounded-lg border border-border bg-card overflow-hidden hover:border-border/60 transition-colors cursor-pointer">
+    <div
+      onClick={onClick}
+      className={`relative rounded-lg border bg-card overflow-hidden hover:border-border/60 transition-colors cursor-pointer ${selected ? "border-border/60 ring-1 ring-border/30" : "border-border"}`}
+    >
       {/* Corner glow */}
       <div
         className="absolute bottom-0 right-0 w-28 h-28 pointer-events-none"

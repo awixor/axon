@@ -2,7 +2,7 @@ import { Activity, Layers, Pin, ShieldCheck } from "lucide-react";
 import { type SpaceRow } from "@/lib/db/spaces";
 import { type ItemRow } from "@/lib/db/items";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { ItemCard } from "@/components/dashboard/ItemCard";
+import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
 import { RecentSpaces } from "@/components/dashboard/RecentSpaces";
 import { RecentItems } from "@/components/dashboard/RecentItems";
 
@@ -58,11 +58,7 @@ export function DashboardMain({
               <Pin size={13} className="text-muted-foreground" />
               Pinned
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {pinnedItems.map((item) => (
-                <ItemCard key={item.id} item={item} />
-              ))}
-            </div>
+            <ItemsGrid items={pinnedItems} />
           </section>
         )}
 

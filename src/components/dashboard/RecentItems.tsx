@@ -4,8 +4,8 @@ import { useState } from "react";
 import { type ItemRow } from "@/lib/db/items";
 import { type ItemType } from "@/types/items";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
-import { ItemCard } from "@/components/dashboard/ItemCard";
 import { FilterTab } from "@/components/dashboard/FilterTab";
+import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
 
 export function RecentItems({ items }: { items: ItemRow[] }) {
   const [filter, setFilter] = useState<ItemType | "ALL">("ALL");
@@ -47,16 +47,7 @@ export function RecentItems({ items }: { items: ItemRow[] }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((item) => (
-          <ItemCard key={item.id} item={item} />
-        ))}
-        {filtered.length === 0 && (
-          <p className="text-xs text-muted-foreground col-span-3 py-4">
-            No items found.
-          </p>
-        )}
-      </div>
+      <ItemsGrid items={filtered} />
     </section>
   );
 }

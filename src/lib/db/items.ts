@@ -1,6 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { type ItemType } from "@/types/items";
 
+export type ItemDetail = {
+  id: string;
+  title: string;
+  type: ItemType;
+  content: string;
+  isVerified: boolean;
+  authorName: string;
+  lastEditedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  spaces: { id: string; name: string; color: string }[];
+};
+
 export type ItemRow = {
   id: string;
   title: string;
@@ -88,6 +101,46 @@ export async function getItemsByType(
     authorName: item.author.name ?? "Unknown",
     updatedAt: item.updatedAt.toISOString(),
   }));
+}
+
+export async function getItemById(
+  id: string,
+  teamId: string,
+): Promise<ItemDetail | null> {
+  const item = await prisma.item.findFirst({
+    where: { id, teamId, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      content: true,
+      isVerified: true,
+      createdAt: true,
+      updatedAt: true,
+      author: { select: { name: true } },
+      lastEditedBy: { select: { name: true } },
+      spaces: {
+        select: {
+          space: { select: { id: true, name: true, color: true } },
+        },
+      },
+    },
+  });
+
+  if (!item) return null;
+
+  return {
+    id: item.id,
+    title: item.title,
+    type: item.type as ItemType,
+    content: item.content,
+    isVerified: item.isVerified,
+    authorName: item.author.name ?? "Unknown",
+    lastEditedByName: item.lastEditedBy?.name ?? null,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    spaces: item.spaces.map((s) => s.space),
+  };
 }
 
 export async function getItemCounts(
