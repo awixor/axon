@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Lock, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import { FileUpload, type UploadedFile } from "@/components/ui/file-upload";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
 import { cn } from "@/lib/utils";
 import { createItem } from "@/actions/items";
@@ -65,6 +66,8 @@ export function NewItemDialog({
   ]);
   const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([]);
 
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
 
@@ -78,6 +81,7 @@ export function NewItemDialog({
     setNotes("");
     setSecretPairs([{ key: "", value: "" }]);
     setSelectedSpaceIds([]);
+    setUploadedFile(null);
     setErrors({});
     setSaving(false);
   }
@@ -131,6 +135,10 @@ export function NewItemDialog({
       notes: notes || null,
       secretPairs,
       spaceIds: selectedSpaceIds,
+      fileKey: uploadedFile?.key ?? null,
+      fileName: uploadedFile?.fileName ?? null,
+      fileSize: uploadedFile?.fileSize ?? null,
+      fileMimeType: uploadedFile?.mimeType ?? null,
     });
 
     setSaving(false);
@@ -374,22 +382,21 @@ export function NewItemDialog({
                 </div>
               )}
 
-              {/* ASSET — locked */}
+              {/* ASSET — file upload */}
               {selectedType === "ASSET" && (
-                <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3">
-                  <Lock
-                    size={14}
-                    className="text-muted-foreground mt-0.5 shrink-0"
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    File <span className="text-destructive">*</span>
+                  </label>
+                  <FileUpload
+                    uploaded={uploadedFile}
+                    onUploaded={setUploadedFile}
+                    onClear={() => setUploadedFile(null)}
+                    disabled={saving}
                   />
-                  <div>
-                    <p className="text-xs font-medium">
-                      File uploads require Team Pro
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      You can create an Asset with a title now and attach a file
-                      after upgrading.
-                    </p>
-                  </div>
+                  {errors.fileKey && (
+                    <p className="text-xs text-destructive">{errors.fileKey[0]}</p>
+                  )}
                 </div>
               )}
 
@@ -438,7 +445,11 @@ export function NewItemDialog({
               <Button
                 size="sm"
                 onClick={handleSubmit}
-                disabled={saving || !title.trim()}
+                disabled={
+                saving ||
+                !title.trim() ||
+                (selectedType === "ASSET" && !uploadedFile)
+              }
               >
                 {saving ? "Creating…" : "Create"}
               </Button>

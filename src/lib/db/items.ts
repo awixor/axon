@@ -2,12 +2,20 @@ import { prisma } from "@/lib/prisma";
 import type { InputJsonValue } from "@prisma/client/runtime/client";
 import { type ItemType } from "@/types/items";
 
+export type AssetMeta = {
+  fileKey: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+};
+
 export type ItemDetail = {
   id: string;
   title: string;
   type: ItemType;
   content: string;
   language?: string;
+  assetMeta?: AssetMeta;
   isVerified: boolean;
   authorName: string;
   lastEditedByName: string | null;
@@ -42,6 +50,7 @@ export type CreateItemFields = {
   type: ItemType;
   content: string;
   metadata?: Record<string, unknown> | null;
+  fileUrl?: string | null;
   authorId: string;
   teamId: string;
   spaceIds?: string[];
@@ -54,6 +63,7 @@ export async function insertItem(fields: CreateItemFields): Promise<ItemRow> {
       type: fields.type,
       content: fields.content,
       ...(fields.metadata ? { metadata: fields.metadata as InputJsonValue } : {}),
+      ...(fields.fileUrl ? { fileUrl: fields.fileUrl } : {}),
       authorId: fields.authorId,
       lastEditedById: fields.authorId,
       teamId: fields.teamId,
@@ -160,6 +170,7 @@ export async function getItemById(
       type: true,
       content: true,
       metadata: true,
+      fileUrl: true,
       isVerified: true,
       createdAt: true,
       updatedAt: true,
@@ -177,12 +188,23 @@ export async function getItemById(
 
   const meta = item.metadata as Record<string, unknown> | null;
 
+  let assetMeta: AssetMeta | undefined;
+  if (item.type === "ASSET" && meta?.fileKey) {
+    assetMeta = {
+      fileKey: meta.fileKey as string,
+      fileName: (meta.fileName as string) ?? "",
+      fileSize: (meta.fileSize as number) ?? 0,
+      mimeType: (meta.mimeType as string) ?? "application/octet-stream",
+    };
+  }
+
   return {
     id: item.id,
     title: item.title,
     type: item.type as ItemType,
     content: item.content,
     language: typeof meta?.language === "string" ? meta.language : undefined,
+    assetMeta,
     isVerified: item.isVerified,
     authorName: item.author.name ?? "Unknown",
     lastEditedByName: item.lastEditedBy?.name ?? null,
@@ -234,12 +256,23 @@ export async function updateItem(
 export async function softDeleteItem(
   id: string,
   teamId: string,
-): Promise<boolean> {
+): Promise<{ deleted: boolean; fileUrl: string | null }> {
+  // Fetch fileUrl before deleting so caller can clean R2
+  const item = await prisma.item.findFirst({
+    where: { id, teamId, deletedAt: null },
+    select: { fileUrl: true },
+  });
+
+  if (!item) return { deleted: false, fileUrl: null };
+
   const result = await prisma.item.updateMany({
     where: { id, teamId, deletedAt: null },
     data: { deletedAt: new Date() },
   });
-  return result.count > 0;
+
+  if (result.count === 0) return { deleted: false, fileUrl: null };
+
+  return { deleted: true, fileUrl: item.fileUrl ?? null };
 }
 
 export async function getItemCounts(

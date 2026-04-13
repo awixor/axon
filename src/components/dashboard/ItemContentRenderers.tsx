@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Download, Eye, EyeOff, ExternalLink, FileText } from "lucide-react";
 import { type ItemDetail } from "@/lib/db/items";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
@@ -127,8 +127,61 @@ export function BlueprintContent({ item }: ItemContentProps) {
 
 // ─── Asset ────────────────────────────────────────────────────────────────────
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function AssetContent({ item }: ItemContentProps) {
-  return <PlainContent content={item.content} />;
+  const meta = item.assetMeta;
+
+  if (!meta?.fileKey) {
+    return (
+      <PlainContent content={item.content || "No file attached"} />
+    );
+  }
+
+  const proxyUrl = `/api/files/${meta.fileKey}`;
+  const isImage = meta.mimeType.startsWith("image/");
+
+  return (
+    <div className="flex flex-col gap-3">
+      {isImage && (
+        <div className="rounded-md overflow-hidden border border-border bg-muted/20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={proxyUrl}
+            alt={meta.fileName}
+            className="max-w-full max-h-80 object-contain mx-auto block"
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+        <div
+          className="flex items-center justify-center size-8 rounded-md shrink-0"
+          style={{ backgroundColor: isImage ? "#60a5fa18" : "#6366f118" }}
+        >
+          <FileText size={14} style={{ color: isImage ? "#60a5fa" : "#6366f1" }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium truncate">{meta.fileName}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {formatBytes(meta.fileSize)} · {meta.mimeType}
+          </p>
+        </div>
+        <a
+          href={proxyUrl}
+          download={meta.fileName}
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <Download size={13} />
+          Download
+        </a>
+      </div>
+    </div>
+  );
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
