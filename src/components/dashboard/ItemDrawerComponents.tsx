@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { type ItemDetail } from "@/lib/db/items";
 import { cn } from "@/lib/utils";
 import { CodeEditor } from "@/components/ui/code-editor";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -110,22 +111,36 @@ export function EditForm({
             <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
               Notes
             </label>
-            <textarea
+            <MarkdownEditor
               value={notes}
-              onChange={(e) => onNotesChange(e.target.value)}
-              rows={6}
-              className="w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+              onChange={onNotesChange}
+              minHeight="120px"
+              maxHeight="300px"
               placeholder="Optional notes…"
             />
           </div>
         </>
       )}
 
-      {/* RUNBOOK, DOC, SECRET_REF, BLUEPRINT: content textarea */}
+      {/* RUNBOOK, DOC, BLUEPRINT: markdown editor */}
       {(item.type === "RUNBOOK" ||
         item.type === "DOC" ||
-        item.type === "SECRET_REF" ||
         item.type === "BLUEPRINT") && (
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Content
+          </label>
+          <MarkdownEditor
+            value={content}
+            onChange={onContentChange}
+            minHeight="200px"
+            maxHeight="400px"
+          />
+        </div>
+      )}
+
+      {/* SECRET_REF: plain textarea */}
+      {item.type === "SECRET_REF" && (
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             Content
