@@ -14,14 +14,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   callbacks: {
-    jwt({ token, user }) {
-      if (user) token.id = user.id;
-
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      // Hydrate teamId on first sign-in or if missing from an older token
+      if (token.id && !token.teamId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { teamId: true },
+        });
+        token.teamId = dbUser?.teamId ?? null;
+      }
       return token;
     },
     session({ session, token }) {
-      if (session.user) session.user.id = token.id as string;
-
+      if (session.user) {
+        session.user.id = token.id as string;
+        if (token.teamId) session.user.teamId = token.teamId as string;
+      }
       return session;
     },
   },

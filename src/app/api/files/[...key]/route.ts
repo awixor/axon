@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/auth";
-import { r2, R2_BUCKET } from "@/lib/r2";
+import { r2, R2_BUCKET, isSafeInline } from "@/lib/r2";
 
 export async function GET(
   _req: NextRequest,
@@ -15,6 +15,11 @@ export async function GET(
   const { key: segments } = await params;
   const key = segments.join("/");
 
+  // Only allow users to access their own uploads
+  if (!key.startsWith(`uploads/${session.user.id}/`)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const command = new GetObjectCommand({ Bucket: R2_BUCKET, Key: key });
     const object = await r2.send(command);
@@ -24,7 +29,11 @@ export async function GET(
     }
 
     const contentType = object.ContentType ?? "application/octet-stream";
-    const contentDisposition = object.ContentDisposition ?? "attachment";
+    const storedDisposition = object.ContentDisposition ?? "attachment";
+    // SVG can execute scripts when rendered inline — always force attachment
+    const contentDisposition = isSafeInline(contentType)
+      ? storedDisposition
+      : storedDisposition.replace(/^inline/, "attachment");
     const stream = object.Body.transformToWebStream();
 
     return new NextResponse(stream, {

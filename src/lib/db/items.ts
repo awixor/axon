@@ -58,37 +58,47 @@ export type CreateItemFields = {
 };
 
 export async function insertItem(fields: CreateItemFields): Promise<ItemRow> {
-  const item = await prisma.item.create({
-    data: {
-      title: fields.title,
-      type: fields.type,
-      content: fields.content,
-      ...(fields.metadata ? { metadata: fields.metadata as InputJsonValue } : {}),
-      ...(fields.fileUrl ? { fileUrl: fields.fileUrl } : {}),
-      authorId: fields.authorId,
-      lastEditedById: fields.authorId,
-      teamId: fields.teamId,
-    },
-    select: itemSelect,
-  });
-
-  if (fields.spaceIds?.length) {
-    await prisma.itemSpace.createMany({
-      data: fields.spaceIds.map((spaceId) => ({ itemId: item.id, spaceId })),
-      skipDuplicates: true,
+  return prisma.$transaction(async (tx) => {
+    const item = await tx.item.create({
+      data: {
+        title: fields.title,
+        type: fields.type,
+        content: fields.content,
+        ...(fields.metadata ? { metadata: fields.metadata as InputJsonValue } : {}),
+        ...(fields.fileUrl ? { fileUrl: fields.fileUrl } : {}),
+        authorId: fields.authorId,
+        lastEditedById: fields.authorId,
+        teamId: fields.teamId,
+      },
+      select: itemSelect,
     });
-  }
 
-  return {
-    id: item.id,
-    title: item.title,
-    type: item.type as ItemType,
-    content: item.content,
-    isVerified: item.isVerified,
-    isPinned: false,
-    authorName: item.author.name ?? "Unknown",
-    updatedAt: item.updatedAt.toISOString(),
-  };
+    if (fields.spaceIds?.length) {
+      // Verify all space IDs belong to this team before inserting (prevents IDOR)
+      const validSpaces = await tx.space.findMany({
+        where: { id: { in: fields.spaceIds }, teamId: fields.teamId },
+        select: { id: true },
+      });
+      const validIds = validSpaces.map((s) => s.id);
+      if (validIds.length) {
+        await tx.itemSpace.createMany({
+          data: validIds.map((spaceId) => ({ itemId: item.id, spaceId })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    return {
+      id: item.id,
+      title: item.title,
+      type: item.type as ItemType,
+      content: item.content,
+      isVerified: item.isVerified,
+      isPinned: false,
+      authorName: item.author.name ?? "Unknown",
+      updatedAt: item.updatedAt.toISOString(),
+    };
+  });
 }
 
 export async function getRecentItems(
@@ -241,6 +251,7 @@ export type UpdateItemFields = {
   title: string;
   content?: string;
   metadata?: Record<string, unknown>;
+  lastEditedById: string;
 };
 
 async function getItemRawMetadata(
@@ -265,6 +276,7 @@ export async function updateItem(
     where: { id, teamId, deletedAt: null },
     data: {
       title: fields.title,
+      lastEditedById: fields.lastEditedById,
       ...(fields.content !== undefined && { content: fields.content }),
       ...(fields.metadata !== undefined && {
         metadata: fields.metadata as InputJsonValue,

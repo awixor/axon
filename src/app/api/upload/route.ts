@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
-import { r2, R2_BUCKET, isAllowedType, isImage, maxBytes } from "@/lib/r2";
+import {
+  r2,
+  R2_BUCKET,
+  isAllowedType,
+  isImage,
+  maxBytes,
+  MAGIC_BYTES,
+  isSafeInline,
+} from "@/lib/r2";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -38,13 +46,25 @@ export async function POST(req: NextRequest) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // Verify binary file content matches the declared MIME type
+  const verifyMagic = MAGIC_BYTES[mimeType];
+  if (verifyMagic && !verifyMagic(buffer)) {
+    return NextResponse.json(
+      { error: "File content does not match declared type" },
+      { status: 400 },
+    );
+  }
+
+  // SVG and non-image types must be served as attachment to prevent inline XSS
+  const disposition = isSafeInline(mimeType) ? "inline" : "attachment";
+
   await r2.send(
     new PutObjectCommand({
       Bucket: R2_BUCKET,
       Key: key,
       Body: buffer,
       ContentType: mimeType,
-      ContentDisposition: `inline; filename="${safeFileName}"`,
+      ContentDisposition: `${disposition}; filename="${safeFileName}"`,
     }),
   );
 

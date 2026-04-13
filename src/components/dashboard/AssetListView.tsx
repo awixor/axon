@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useOptimistic, startTransition } from "react";
+import { formatBytes } from "@/lib/format";
 import {
   Download,
   FileText,
@@ -68,12 +69,6 @@ function getIconConfig(mimeType: string): FileIconConfig {
       bgColor: "rgba(248,113,113,0.08)",
     };
   return { Icon: File, color: ASSET_ACCENT, bgColor: "rgba(148,163,184,0.08)" };
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // ─── Column header ─────────────────────────────────────────────────────────

@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 import { auth } from "@/auth";
-import { getUser } from "@/lib/db/users";
 import { updateItem as dbUpdateItem, getItemRawMetadata, softDeleteItem, insertItem } from "@/lib/db/items";
 import { ITEM_TYPES } from "@/lib/type-config";
 import { deleteR2Object } from "@/lib/r2";
@@ -72,13 +71,10 @@ export type CreateItemInput = z.input<typeof createItemSchema>;
 
 export async function createItem(data: CreateItemInput) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  const teamId = session?.user?.teamId;
+  if (!userId || !teamId) {
     return { success: false as const, error: "Not authenticated" };
-  }
-
-  const user = await getUser(session.user.id);
-  if (!user?.teamId) {
-    return { success: false as const, error: "User not found" };
   }
 
   const parsed = createItemSchema.safeParse(data);
@@ -131,6 +127,9 @@ export async function createItem(data: CreateItemInput) {
         .join("\n");
       break;
     case "ASSET":
+      if (!fileKey?.startsWith(`uploads/${userId}/`)) {
+        return { success: false as const, error: "Invalid file reference" };
+      }
       finalContent = fileName ?? "";
       fileUrl = fileKey ?? null;
       metadata = {
@@ -151,8 +150,8 @@ export async function createItem(data: CreateItemInput) {
     content: finalContent,
     metadata,
     fileUrl,
-    authorId: user.id,
-    teamId: user.teamId,
+    authorId: userId,
+    teamId,
     spaceIds,
   });
 
@@ -187,13 +186,10 @@ export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 
 export async function updateItem(itemId: string, data: UpdateItemInput) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  const teamId = session?.user?.teamId;
+  if (!userId || !teamId) {
     return { success: false as const, error: "Not authenticated" };
-  }
-
-  const user = await getUser(session.user.id);
-  if (!user?.teamId) {
-    return { success: false as const, error: "User not found" };
   }
 
   const parsed = updateItemSchema.safeParse(data);
@@ -222,7 +218,7 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
     }
     case "SNIPPET": {
       finalContent = content ?? "";
-      const existingMeta = await getItemRawMetadata(itemId, user.teamId);
+      const existingMeta = await getItemRawMetadata(itemId, teamId);
       metadata = { ...existingMeta, language: language?.trim() || null };
       break;
     }
@@ -237,10 +233,11 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
     }
   }
 
-  const updated = await dbUpdateItem(itemId, user.teamId, {
+  const updated = await dbUpdateItem(itemId, teamId, {
     title,
     content: finalContent,
     metadata,
+    lastEditedById: userId,
   });
 
   if (!updated) {
@@ -252,16 +249,12 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
 
 export async function deleteItem(itemId: string) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const teamId = session?.user?.teamId;
+  if (!session?.user?.id || !teamId) {
     return { success: false as const, error: "Not authenticated" };
   }
 
-  const user = await getUser(session.user.id);
-  if (!user?.teamId) {
-    return { success: false as const, error: "User not found" };
-  }
-
-  const { deleted, fileUrl } = await softDeleteItem(itemId, user.teamId);
+  const { deleted, fileUrl } = await softDeleteItem(itemId, teamId);
   if (!deleted) {
     return { success: false as const, error: "Item not found or already deleted" };
   }

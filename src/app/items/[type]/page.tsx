@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getUser } from "@/lib/db/users";
 import { getItemsByType } from "@/lib/db/items";
 import { getAllSpaces } from "@/lib/db/spaces";
 import { ITEM_TYPE_BY_SLUG, TYPE_CONFIG } from "@/lib/type-config";
@@ -19,8 +18,7 @@ export default async function ItemListPage({
   if (!itemType) notFound();
 
   const session = await getSession();
-  const user = session?.user?.id ? await getUser(session.user.id) : null;
-  const teamId = user?.teamId ?? "";
+  const teamId = session?.user?.teamId ?? "";
   const [items, spaces] = await Promise.all([
     getItemsByType(teamId, itemType),
     getAllSpaces(teamId),

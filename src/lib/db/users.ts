@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 export type UserRow = {
@@ -22,7 +23,7 @@ export type ProfileData = {
   totalSpaces: number;
 };
 
-export async function getUser(userId: string): Promise<UserRow | null> {
+export const getUser = cache(async function getUser(userId: string): Promise<UserRow | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, name: true, email: true, image: true, teamId: true },
@@ -46,7 +47,7 @@ export async function getUser(userId: string): Promise<UserRow | null> {
     initials,
     teamId: user.teamId,
   };
-}
+});
 
 export async function getProfileData(
   userId: string,

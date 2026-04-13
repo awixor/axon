@@ -2,12 +2,10 @@ import { DashboardMain } from "@/components/dashboard/DashboardMain";
 import { getRecentSpaces } from "@/lib/db/spaces";
 import { getRecentItems, getPinnedItems, getItemCounts } from "@/lib/db/items";
 import { getSession } from "@/lib/session";
-import { getUser } from "@/lib/db/users";
 
 export default async function DashboardPage() {
   const session = await getSession();
-  const user = session?.user?.id ? await getUser(session.user.id) : null;
-  const teamId = user?.teamId ?? "";
+  const teamId = session?.user?.teamId ?? "";
 
   const [spaces, recentItems, pinnedItems, { total, verified, recentActivity }] =
     await Promise.all([

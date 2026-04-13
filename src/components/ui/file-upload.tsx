@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { formatBytes } from "@/lib/format";
 import {
   Paperclip,
   UploadCloud,
@@ -35,12 +36,6 @@ const ACCEPTED = [
   ...Array.from(ALLOWED_IMAGE_TYPES),
   ...Array.from(ALLOWED_FILE_TYPES),
 ].join(",");
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function validateFile(file: File): string | null {
   const mime = file.type;

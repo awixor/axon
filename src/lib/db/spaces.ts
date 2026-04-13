@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 export type SpaceOption = {
@@ -6,13 +7,15 @@ export type SpaceOption = {
   color: string;
 };
 
-export async function getAllSpaces(teamId: string): Promise<SpaceOption[]> {
+export const getAllSpaces = cache(async function getAllSpaces(
+  teamId: string,
+): Promise<SpaceOption[]> {
   return prisma.space.findMany({
     where: { teamId },
     orderBy: { name: "asc" },
     select: { id: true, name: true, color: true },
   });
-}
+});
 
 export type SpaceRow = {
   id: string;
@@ -24,7 +27,7 @@ export type SpaceRow = {
   updatedAt: string; // ISO string — safe to pass to client components
 };
 
-export async function getRecentSpaces(
+export const getRecentSpaces = cache(async function getRecentSpaces(
   teamId: string,
   limit: number = 6,
 ): Promise<SpaceRow[]> {
@@ -52,4 +55,4 @@ export async function getRecentSpaces(
     itemCount: s._count.items,
     updatedAt: s.updatedAt.toISOString(),
   }));
-}
+});

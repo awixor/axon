@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatBytes } from "@/lib/format";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -126,12 +127,6 @@ export function BlueprintContent({ item }: ItemContentProps) {
 }
 
 // ─── Asset ────────────────────────────────────────────────────────────────────
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export function AssetContent({ item }: ItemContentProps) {
   const meta = item.assetMeta;
