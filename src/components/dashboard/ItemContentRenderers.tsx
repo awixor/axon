@@ -7,38 +7,15 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Eye, EyeOff, ExternalLink } from "lucide-react";
 import { type ItemDetail } from "@/lib/db/items";
+import { CodeEditor } from "@/components/ui/code-editor";
 
 export type ItemContentProps = { item: ItemDetail };
 
 // ─── Snippet ──────────────────────────────────────────────────────────────────
 
 export function SnippetContent({ item }: ItemContentProps) {
-  const lang = item.language ?? "text";
-
   return (
-    <div className="rounded-md overflow-hidden border border-border text-xs">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border">
-        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-          {lang}
-        </span>
-      </div>
-      <SyntaxHighlighter
-        language={lang}
-        style={vscDarkPlus}
-        showLineNumbers
-        customStyle={{
-          margin: 0,
-          borderRadius: 0,
-          fontSize: "12px",
-          background: "transparent",
-          padding: "1rem",
-        }}
-        lineNumberStyle={{ color: "#4b5563", minWidth: "2.5em" }}
-        codeTagProps={{ style: { fontFamily: "var(--font-mono, monospace)" } }}
-      >
-        {item.content}
-      </SyntaxHighlighter>
-    </div>
+    <CodeEditor value={item.content} language={item.language ?? "text"} />
   );
 }
 

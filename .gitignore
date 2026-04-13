@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+.playwright-mcp
 
 # next.js
 /.next/
@@ -51,5 +52,3 @@ context
 delete-test-users.ts
 
 audit-results
-
-.playwright-mcp
