@@ -133,6 +133,7 @@ export function EditForm({
           <MarkdownEditor
             value={content}
             onChange={onContentChange}
+            itemType={item.type}
             minHeight="200px"
             maxHeight="400px"
           />

@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { MarkdownContent } from "@/components/dashboard/ItemContentRenderers";
+import { extractCopyText } from "@/lib/utils/copy";
 
 type Props = {
   value: string;
   onChange?: (value: string) => void;
+  itemType?: string;
   minHeight?: string;
   maxHeight?: string;
   placeholder?: string;
@@ -15,6 +17,7 @@ type Props = {
 export function MarkdownEditor({
   value,
   onChange,
+  itemType,
   minHeight = "120px",
   maxHeight = "400px",
   placeholder = "Write in markdown…",
@@ -24,48 +27,42 @@ export function MarkdownEditor({
   const readOnly = !onChange;
 
   function handleCopy() {
-    navigator.clipboard.writeText(value);
+    const text = itemType ? extractCopyText(itemType, value) : value;
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
 
+  if (readOnly) {
+    return <MarkdownContent content={value} />;
+  }
+
   return (
-    <div className="rounded-md overflow-hidden border border-border">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border">
-        {!readOnly ? (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
-            </div>
-            <div className="flex items-center">
-              <button
-                onClick={() => setTab("write")}
-                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                  tab === "write"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Write
-              </button>
-              <button
-                onClick={() => setTab("preview")}
-                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                  tab === "preview"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Preview
-              </button>
-            </div>
-          </div>
-        ) : (
-          <span />
-        )}
+    <div className="flex flex-col gap-2">
+      {/* Toolbar — no macOS dots, just tabs + copy */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/40 rounded-md border border-border">
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => setTab("write")}
+            className={`text-[10px] px-2.5 py-1 rounded transition-colors ${
+              tab === "write"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Write
+          </button>
+          <button
+            onClick={() => setTab("preview")}
+            className={`text-[10px] px-2.5 py-1 rounded transition-colors ${
+              tab === "preview"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Preview
+          </button>
+        </div>
         <button
           onClick={handleCopy}
           title={copied ? "Copied!" : "Copy"}
@@ -77,9 +74,9 @@ export function MarkdownEditor({
       </div>
 
       {/* Content */}
-      {readOnly || tab === "preview" ? (
+      {tab === "preview" ? (
         <div
-          className="px-3 py-2.5 overflow-y-auto"
+          className="overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent"
           style={{ maxHeight }}
         >
           <MarkdownContent content={value} />
@@ -88,7 +85,7 @@ export function MarkdownEditor({
         <textarea
           value={value}
           onChange={(e) => onChange!(e.target.value)}
-          className="bg-transparent px-3 py-2.5 text-xs font-mono focus:outline-none resize-none w-full"
+          className="bg-muted/20 border border-border rounded-md px-3 py-2.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring resize-none w-full"
           style={{ minHeight, maxHeight }}
           placeholder={placeholder}
         />

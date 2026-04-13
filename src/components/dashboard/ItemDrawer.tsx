@@ -22,6 +22,7 @@ import { type ItemDetail } from "@/lib/db/items";
 import { TYPE_CONFIG } from "@/lib/type-config";
 import { ItemContent } from "@/components/dashboard/ItemContent";
 import { relativeTime } from "@/lib/utils/time";
+import { extractCopyText } from "@/lib/utils/copy";
 import { updateItem, deleteItem } from "@/actions/items";
 import { toast } from "sonner";
 import {
@@ -69,7 +70,7 @@ export function ItemDrawer({
 
   function handleCopy() {
     if (!item) return;
-    navigator.clipboard.writeText(item.content);
+    navigator.clipboard.writeText(extractCopyText(item.type, item.content));
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
@@ -277,7 +278,7 @@ export function ItemDrawer({
         </SheetHeader>
 
         {/* Content / Edit form */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent">
           {editMode ? (
             <EditForm
               item={item}
