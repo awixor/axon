@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CodeEditor } from "@/components/ui/code-editor";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
 import { cn } from "@/lib/utils";
 import { createItem } from "@/actions/items";
@@ -272,11 +273,11 @@ export function NewItemDialog({
                     {FIELD_LABELS[selectedType]}{" "}
                     <span className="text-destructive">*</span>
                   </label>
-                  <textarea
+                  <MarkdownEditor
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={12}
-                    className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-xs font-mono focus:outline-none focus:ring-3 focus:ring-ring/50 focus:border-ring resize-none"
+                    onChange={setContent}
+                    minHeight="200px"
+                    maxHeight="400px"
                     placeholder={
                       selectedType === "BLUEPRINT"
                         ? "Paste your template text…"
@@ -314,11 +315,11 @@ export function NewItemDialog({
                     <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                       Notes
                     </label>
-                    <textarea
+                    <MarkdownEditor
                       value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={5}
-                      className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-xs focus:outline-none focus:ring-3 focus:ring-ring/50 focus:border-ring resize-none"
+                      onChange={setNotes}
+                      minHeight="120px"
+                      maxHeight="300px"
                       placeholder="Optional notes…"
                     />
                   </div>

@@ -8,6 +8,7 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Eye, EyeOff, ExternalLink } from "lucide-react";
 import { type ItemDetail } from "@/lib/db/items";
 import { CodeEditor } from "@/components/ui/code-editor";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 
 export type ItemContentProps = { item: ItemDetail };
 
@@ -22,13 +23,13 @@ export function SnippetContent({ item }: ItemContentProps) {
 // ─── Runbook ──────────────────────────────────────────────────────────────────
 
 export function RunbookContent({ item }: ItemContentProps) {
-  return <MarkdownContent content={item.content} codeTheme="terminal" />;
+  return <MarkdownEditor value={item.content} />;
 }
 
 // ─── Doc ─────────────────────────────────────────────────────────────────────
 
 export function DocContent({ item }: ItemContentProps) {
-  return <MarkdownContent content={item.content} />;
+  return <MarkdownEditor value={item.content} />;
 }
 
 // ─── Resource ─────────────────────────────────────────────────────────────────
@@ -121,13 +122,7 @@ export function SecretRefContent({ item }: ItemContentProps) {
 // ─── Blueprint ────────────────────────────────────────────────────────────────
 
 export function BlueprintContent({ item }: ItemContentProps) {
-  return (
-    <div className="rounded-md border border-border bg-muted/20 px-4 py-3">
-      <p className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
-        {item.content}
-      </p>
-    </div>
-  );
+  return <MarkdownEditor value={item.content} />;
 }
 
 // ─── Asset ────────────────────────────────────────────────────────────────────
@@ -252,6 +247,26 @@ export function MarkdownContent({
             <blockquote className="border-l-2 border-border pl-3 text-muted-foreground italic my-2">
               {children}
             </blockquote>
+          ),
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-2">
+              <table className="text-xs border-collapse w-full">{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead>{children}</thead>,
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => (
+            <tr className="border-b border-border">{children}</tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-3 py-1.5 text-left font-semibold bg-muted/30 border border-border">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-3 py-1.5 border border-border text-muted-foreground">
+              {children}
+            </td>
           ),
         }}
       >
