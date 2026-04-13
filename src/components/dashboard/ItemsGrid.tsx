@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic } from "react";
+import { useState, useOptimistic, startTransition } from "react";
 import { type ItemRow, type ItemDetail } from "@/lib/db/items";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { ItemDrawer } from "@/components/dashboard/ItemDrawer";
@@ -56,7 +56,9 @@ export function ItemsGrid({ items, emptyMessage = "No items found." }: Props) {
   }
 
   function handleItemDeleted(itemId: string) {
-    removeOptimisticItem(itemId);
+    startTransition(() => {
+      removeOptimisticItem(itemId);
+    });
   }
 
   return (

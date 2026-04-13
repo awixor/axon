@@ -130,4 +130,12 @@
   html {
     @apply font-sans;
   }
+
+  button,
+  [role="button"],
+  label[for],
+  select,
+  summary {
+    cursor: pointer;
+  }
 }

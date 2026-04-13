@@ -51,3 +51,5 @@ context
 delete-test-users.ts
 
 audit-results
+
+.playwright-mcp
