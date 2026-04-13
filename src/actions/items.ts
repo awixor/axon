@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { getUser } from "@/lib/db/users";
 import { updateItem as dbUpdateItem, getItemRawMetadata, softDeleteItem, insertItem } from "@/lib/db/items";
 import { ITEM_TYPES } from "@/lib/type-config";
+import { deleteR2Object } from "@/lib/r2";
 
 const createItemSchema = z
   .object({
@@ -19,6 +20,11 @@ const createItemSchema = z
       .optional()
       .default([]),
     spaceIds: z.array(z.string()).optional().default([]),
+    // ASSET-specific
+    fileKey: z.string().optional().nullable(),
+    fileName: z.string().optional().nullable(),
+    fileSize: z.number().optional().nullable(),
+    fileMimeType: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.type === "RESOURCE") {
@@ -52,6 +58,14 @@ const createItemSchema = z
         path: ["content"],
       });
     }
+
+    if (data.type === "ASSET" && !data.fileKey) {
+      ctx.addIssue({
+        code: "custom",
+        message: "A file is required for assets",
+        path: ["fileKey"],
+      });
+    }
   });
 
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -75,11 +89,24 @@ export async function createItem(data: CreateItemInput) {
     };
   }
 
-  const { type, title, content, language, url, notes, secretPairs, spaceIds } =
-    parsed.data;
+  const {
+    type,
+    title,
+    content,
+    language,
+    url,
+    notes,
+    secretPairs,
+    spaceIds,
+    fileKey,
+    fileName,
+    fileSize,
+    fileMimeType,
+  } = parsed.data;
 
   let finalContent = "";
   let metadata: Record<string, unknown> | null = null;
+  let fileUrl: string | null = null;
 
   switch (type) {
     case "SNIPPET":
@@ -103,6 +130,16 @@ export async function createItem(data: CreateItemInput) {
         .map((p) => `${p.key.trim()}: ${p.value}`)
         .join("\n");
       break;
+    case "ASSET":
+      finalContent = fileName ?? "";
+      fileUrl = fileKey ?? null;
+      metadata = {
+        fileKey: fileKey ?? "",
+        fileName: fileName ?? "",
+        fileSize: fileSize ?? 0,
+        mimeType: fileMimeType ?? "application/octet-stream",
+      };
+      break;
     default:
       finalContent = content ?? "";
       break;
@@ -113,6 +150,7 @@ export async function createItem(data: CreateItemInput) {
     type,
     content: finalContent,
     metadata,
+    fileUrl,
     authorId: user.id,
     teamId: user.teamId,
     spaceIds,
@@ -223,9 +261,15 @@ export async function deleteItem(itemId: string) {
     return { success: false as const, error: "User not found" };
   }
 
-  const deleted = await softDeleteItem(itemId, user.teamId);
+  const { deleted, fileUrl } = await softDeleteItem(itemId, user.teamId);
   if (!deleted) {
     return { success: false as const, error: "Item not found or already deleted" };
+  }
+
+  if (fileUrl) {
+    await deleteR2Object(fileUrl).catch(() => {
+      // Non-fatal: item is already soft-deleted
+    });
   }
 
   return { success: true as const };

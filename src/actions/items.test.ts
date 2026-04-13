@@ -12,7 +12,7 @@ vi.mock("@/lib/db/users", () => ({
 
 const mockGetItemRawMetadata = vi.fn().mockResolvedValue({});
 const mockDbUpdateItem = vi.fn();
-const mockSoftDeleteItem = vi.fn().mockResolvedValue(true);
+const mockSoftDeleteItem = vi.fn().mockResolvedValue({ deleted: true, fileUrl: null });
 const mockInsertItem = vi.fn().mockResolvedValue({ id: "item-new", title: "T", type: "SNIPPET" });
 
 vi.mock("@/lib/db/items", () => ({
@@ -20,6 +20,12 @@ vi.mock("@/lib/db/items", () => ({
   updateItem: mockDbUpdateItem,
   softDeleteItem: mockSoftDeleteItem,
   insertItem: mockInsertItem,
+}));
+
+const mockDeleteR2Object = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@/lib/r2", () => ({
+  deleteR2Object: mockDeleteR2Object,
 }));
 
 vi.mock("@/lib/type-config", () => ({
@@ -47,8 +53,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockDbUpdateItem.mockResolvedValue(updatedItem);
   mockGetItemRawMetadata.mockResolvedValue({});
-  mockSoftDeleteItem.mockResolvedValue(true);
+  mockSoftDeleteItem.mockResolvedValue({ deleted: true, fileUrl: null });
   mockInsertItem.mockResolvedValue({ id: "item-new", title: "T", type: "SNIPPET" });
+  mockDeleteR2Object.mockResolvedValue(undefined);
   vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as never);
   vi.mocked(getUser).mockResolvedValue({ id: "user-1", teamId: "team-1" } as never);
 });
@@ -409,9 +416,89 @@ describe("deleteItem", () => {
   });
 
   it("returns error when item does not exist or already deleted", async () => {
-    mockSoftDeleteItem.mockResolvedValueOnce(false);
+    mockSoftDeleteItem.mockResolvedValueOnce({ deleted: false, fileUrl: null });
     const result = await deleteItem("item-1");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/not found|already deleted/i);
+  });
+
+  it("calls deleteR2Object when item has a fileUrl", async () => {
+    mockSoftDeleteItem.mockResolvedValueOnce({
+      deleted: true,
+      fileUrl: "uploads/user-1/some-uuid.png",
+    });
+    const result = await deleteItem("item-1");
+    expect(result.success).toBe(true);
+    expect(mockDeleteR2Object).toHaveBeenCalledWith("uploads/user-1/some-uuid.png");
+  });
+
+  it("does not call deleteR2Object when item has no fileUrl", async () => {
+    mockSoftDeleteItem.mockResolvedValueOnce({ deleted: true, fileUrl: null });
+    await deleteItem("item-1");
+    expect(mockDeleteR2Object).not.toHaveBeenCalled();
+  });
+
+  it("succeeds even if deleteR2Object throws", async () => {
+    mockSoftDeleteItem.mockResolvedValueOnce({
+      deleted: true,
+      fileUrl: "uploads/user-1/some-uuid.pdf",
+    });
+    mockDeleteR2Object.mockRejectedValueOnce(new Error("R2 error"));
+    const result = await deleteItem("item-1");
+    expect(result.success).toBe(true);
+  });
+});
+
+// ─── createItem — ASSET ───────────────────────────────────────────────────────
+
+describe("createItem — ASSET", () => {
+  it("creates asset with file metadata", async () => {
+    const result = await createItem({
+      type: "ASSET",
+      title: "Architecture Diagram",
+      fileKey: "uploads/user-1/uuid.png",
+      fileName: "arch.png",
+      fileSize: 102400,
+      fileMimeType: "image/png",
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockInsertItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "ASSET",
+        title: "Architecture Diagram",
+        content: "arch.png",
+        fileUrl: "uploads/user-1/uuid.png",
+        metadata: {
+          fileKey: "uploads/user-1/uuid.png",
+          fileName: "arch.png",
+          fileSize: 102400,
+          mimeType: "image/png",
+        },
+      }),
+    );
+  });
+
+  it("returns validation error when no fileKey provided", async () => {
+    const result = await createItem({
+      type: "ASSET",
+      title: "Diagram",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  it("returns validation error when title is missing", async () => {
+    const result = await createItem({
+      type: "ASSET",
+      title: "",
+      fileKey: "uploads/user-1/uuid.png",
+      fileName: "file.png",
+      fileSize: 1024,
+      fileMimeType: "image/png",
+    });
+
+    expect(result.success).toBe(false);
   });
 });
