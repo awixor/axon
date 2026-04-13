@@ -33,6 +33,7 @@ export type ItemRow = {
   isPinned: boolean;
   authorName: string;
   updatedAt: string; // ISO string — safe to pass to client components
+  assetMeta?: AssetMeta; // only present for ASSET items
 };
 
 const itemSelect = {
@@ -140,22 +141,44 @@ export async function getItemsByType(
   teamId: string,
   type: ItemType,
 ): Promise<ItemRow[]> {
+  const isAsset = type === "ASSET";
   const items = await prisma.item.findMany({
     where: { teamId, type, deletedAt: null },
     orderBy: { updatedAt: "desc" },
-    select: itemSelect,
+    select: {
+      ...itemSelect,
+      ...(isAsset ? { metadata: true } : {}),
+    },
   });
 
-  return items.map((item) => ({
-    id: item.id,
-    title: item.title,
-    type: item.type as ItemType,
-    content: item.content,
-    isVerified: item.isVerified,
-    isPinned: false,
-    authorName: item.author.name ?? "Unknown",
-    updatedAt: item.updatedAt.toISOString(),
-  }));
+  return items.map((item) => {
+    const meta = isAsset
+      ? (item as typeof item & { metadata: Record<string, unknown> | null })
+          .metadata
+      : null;
+
+    let assetMeta: AssetMeta | undefined;
+    if (isAsset && meta?.fileKey) {
+      assetMeta = {
+        fileKey: meta.fileKey as string,
+        fileName: (meta.fileName as string) ?? "",
+        fileSize: (meta.fileSize as number) ?? 0,
+        mimeType: (meta.mimeType as string) ?? "application/octet-stream",
+      };
+    }
+
+    return {
+      id: item.id,
+      title: item.title,
+      type: item.type as ItemType,
+      content: item.content,
+      isVerified: item.isVerified,
+      isPinned: false,
+      authorName: item.author.name ?? "Unknown",
+      updatedAt: item.updatedAt.toISOString(),
+      ...(assetMeta ? { assetMeta } : {}),
+    };
+  });
 }
 
 export async function getItemById(

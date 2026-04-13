@@ -5,6 +5,7 @@ import { getItemsByType } from "@/lib/db/items";
 import { getAllSpaces } from "@/lib/db/spaces";
 import { ITEM_TYPE_BY_SLUG, TYPE_CONFIG } from "@/lib/type-config";
 import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
+import { AssetListView } from "@/components/dashboard/AssetListView";
 import { NewTypeItemButton } from "@/components/dashboard/NewTypeItemButton";
 
 export default async function ItemListPage({
@@ -39,7 +40,9 @@ export default async function ItemListPage({
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {itemType === "ASSET" ? (
+        <AssetListView items={items} emptyMessage="No assets yet." />
+      ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">No {config.plural.toLowerCase()} yet.</p>
       ) : (
         <ItemsGrid items={items} />
