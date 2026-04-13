@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getUser } from "@/lib/db/users";
 import { getItemsByType } from "@/lib/db/items";
+import { getAllSpaces } from "@/lib/db/spaces";
 import { ITEM_TYPE_BY_SLUG, TYPE_CONFIG } from "@/lib/type-config";
 import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
+import { NewTypeItemButton } from "@/components/dashboard/NewTypeItemButton";
 
 export default async function ItemListPage({
   params,
@@ -17,7 +19,11 @@ export default async function ItemListPage({
 
   const session = await getSession();
   const user = session?.user?.id ? await getUser(session.user.id) : null;
-  const items = await getItemsByType(user?.teamId ?? "", itemType);
+  const teamId = user?.teamId ?? "";
+  const [items, spaces] = await Promise.all([
+    getItemsByType(teamId, itemType),
+    getAllSpaces(teamId),
+  ]);
 
   const config = TYPE_CONFIG[itemType];
   const Icon = config.icon;
@@ -28,6 +34,9 @@ export default async function ItemListPage({
         <Icon size={18} style={{ color: config.color }} />
         <h1 className="text-lg font-semibold">{config.plural}</h1>
         <span className="text-sm text-muted-foreground">({items.length})</span>
+        <div className="ml-auto">
+          <NewTypeItemButton itemType={itemType} spaces={spaces} />
+        </div>
       </div>
 
       {items.length === 0 ? (

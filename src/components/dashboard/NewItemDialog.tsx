@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CodeEditor } from "@/components/ui/code-editor";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
+import { cn } from "@/lib/utils";
 import { createItem } from "@/actions/items";
 import type { SpaceOption } from "@/lib/db/spaces";
 import type { ItemType } from "@/types/items";
@@ -21,6 +23,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   spaces: SpaceOption[];
+  defaultType?: ItemType;
 };
 
 type SecretPair = { key: string; value: string };
@@ -37,11 +40,18 @@ const FIELD_LABELS: Record<ItemType, string> = {
   ASSET: "",
 };
 
-export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
+export function NewItemDialog({
+  open,
+  onOpenChange,
+  spaces,
+  defaultType,
+}: Props) {
   const router = useRouter();
 
-  const [step, setStep] = useState<1 | 2>(1);
-  const [selectedType, setSelectedType] = useState<ItemType | null>(null);
+  const [step, setStep] = useState<1 | 2>(defaultType ? 2 : 1);
+  const [selectedType, setSelectedType] = useState<ItemType | null>(
+    defaultType ?? null,
+  );
 
   // Form fields
   const [title, setTitle] = useState("");
@@ -58,8 +68,8 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setStep(1);
-    setSelectedType(null);
+    setStep(defaultType ? 2 : 1);
+    setSelectedType(defaultType ?? null);
     setTitle("");
     setContent("");
     setLanguage("");
@@ -178,13 +188,15 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
           <>
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={goBack}
-                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ArrowLeft size={15} />
-                  <span className="sr-only">Back</span>
-                </button>
+                {!defaultType && (
+                  <button
+                    onClick={goBack}
+                    className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeft size={15} />
+                    <span className="sr-only">Back</span>
+                  </button>
+                )}
                 {Icon && config && (
                   <div className="flex items-center gap-1.5">
                     <Icon size={13} style={{ color: config.color }} />
@@ -197,9 +209,7 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
                   </div>
                 )}
               </div>
-              <DialogTitle>
-                New {config?.label}
-              </DialogTitle>
+              <DialogTitle>New {config?.label}</DialogTitle>
             </DialogHeader>
 
             <div className="flex flex-col gap-4">
@@ -237,15 +247,17 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
                     <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                       Code <span className="text-destructive">*</span>
                     </label>
-                    <textarea
+                    <CodeEditor
                       value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      rows={10}
-                      className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-xs font-mono focus:outline-none focus:ring-3 focus:ring-ring/50 focus:border-ring resize-none"
-                      placeholder="Paste your code here…"
+                      language={language}
+                      onChange={setContent}
+                      minHeight="200px"
+                      maxHeight="400px"
                     />
                     {errors.content && (
-                      <p className="text-xs text-destructive">{errors.content[0]}</p>
+                      <p className="text-xs text-destructive">
+                        {errors.content[0]}
+                      </p>
                     )}
                   </div>
                 </>
@@ -272,7 +284,9 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
                     }
                   />
                   {errors.content && (
-                    <p className="text-xs text-destructive">{errors.content[0]}</p>
+                    <p className="text-xs text-destructive">
+                      {errors.content[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -291,7 +305,9 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
                       className="font-mono"
                     />
                     {errors.url && (
-                      <p className="text-xs text-destructive">{errors.url[0]}</p>
+                      <p className="text-xs text-destructive">
+                        {errors.url[0]}
+                      </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -360,11 +376,17 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
               {/* ASSET — locked */}
               {selectedType === "ASSET" && (
                 <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3">
-                  <Lock size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                  <Lock
+                    size={14}
+                    className="text-muted-foreground mt-0.5 shrink-0"
+                  />
                   <div>
-                    <p className="text-xs font-medium">File uploads require Team Pro</p>
+                    <p className="text-xs font-medium">
+                      File uploads require Team Pro
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      You can create an Asset with a title now and attach a file after upgrading.
+                      You can create an Asset with a title now and attach a file
+                      after upgrading.
                     </p>
                   </div>
                 </div>
@@ -376,25 +398,27 @@ export function NewItemDialog({ open, onOpenChange, spaces }: Props) {
                   <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                     Spaces
                   </label>
-                  <div className="max-h-36 overflow-y-auto rounded-lg border border-border p-2 flex flex-col gap-1">
-                    {spaces.map((space) => (
-                      <label
-                        key={space.id}
-                        className="flex items-center gap-2.5 px-1 py-1 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded"
-                          checked={selectedSpaceIds.includes(space.id)}
-                          onChange={() => toggleSpace(space.id)}
-                        />
-                        <span
-                          className="inline-block size-2 rounded-full shrink-0"
-                          style={{ backgroundColor: space.color }}
-                        />
-                        <span className="text-xs">{space.name}</span>
-                      </label>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {spaces.map((space) => {
+                      const selected = selectedSpaceIds.includes(space.id);
+                      return (
+                        <button
+                          key={space.id}
+                          type="button"
+                          onClick={() => toggleSpace(space.id)}
+                          style={{ "--c": space.color } as React.CSSProperties}
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer",
+                            selected
+                              ? "border-(--c) text-(--c) bg-(--c)/10"
+                              : "border-border text-muted-foreground hover:bg-muted/50 hover:border-foreground/20",
+                          )}
+                        >
+                          <span className="size-1.5 rounded-full shrink-0 bg-(--c)" />
+                          {space.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
