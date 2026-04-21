@@ -91,7 +91,8 @@ describe("createSpace", () => {
   });
 
   it("defaults visibility to PRIVATE_TO_TEAM when omitted", async () => {
-    const { visibility: _, ...withoutVisibility } = validInput;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { visibility: _visibility, ...withoutVisibility } = validInput;
     const result = await createSpace(withoutVisibility);
     expect(result.success).toBe(true);
     expect(mockInsertSpace).toHaveBeenCalledWith(
