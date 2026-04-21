@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type ItemDetail } from "@/lib/db/items";
+import { type SpaceOption } from "@/lib/db/spaces";
 import { cn } from "@/lib/utils";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
@@ -25,11 +26,14 @@ export type EditFormProps = {
   language: string;
   url: string;
   notes: string;
+  spaces: SpaceOption[];
+  selectedSpaceIds: string[];
   onTitleChange: (v: string) => void;
   onContentChange: (v: string) => void;
   onLanguageChange: (v: string) => void;
   onUrlChange: (v: string) => void;
   onNotesChange: (v: string) => void;
+  onSpaceToggle: (id: string) => void;
 };
 
 export function EditForm({
@@ -39,11 +43,14 @@ export function EditForm({
   language,
   url,
   notes,
+  spaces,
+  selectedSpaceIds,
   onTitleChange,
   onContentChange,
   onLanguageChange,
   onUrlChange,
   onNotesChange,
+  onSpaceToggle,
 }: EditFormProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -165,6 +172,39 @@ export function EditForm({
           </p>
         </div>
       )}
+
+      {/* Spaces */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Spaces
+        </label>
+        {spaces.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No spaces — create one first.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {spaces.map((space) => {
+              const selected = selectedSpaceIds.includes(space.id);
+              return (
+                <button
+                  key={space.id}
+                  type="button"
+                  onClick={() => onSpaceToggle(space.id)}
+                  style={{ "--c": space.color } as React.CSSProperties}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer",
+                    selected
+                      ? "border-(--c) text-(--c) bg-(--c)/10"
+                      : "border-border text-muted-foreground hover:bg-muted/50 hover:border-foreground/20",
+                  )}
+                >
+                  <span className="size-1.5 rounded-full shrink-0 bg-(--c)" />
+                  {space.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

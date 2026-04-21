@@ -13,6 +13,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { type ItemRow } from "@/lib/db/items";
+import { type SpaceOption } from "@/lib/db/spaces";
 import { ItemDrawer } from "@/components/dashboard/ItemDrawer";
 import { relativeTime } from "@/lib/utils/time";
 import Image from "next/image";
@@ -284,11 +285,13 @@ function EmptyState({ message }: { message: string }) {
 
 type Props = {
   items: ItemRow[];
+  spaces?: SpaceOption[];
   emptyMessage?: string;
 };
 
 export function AssetListView({
   items,
+  spaces = [],
   emptyMessage = "No assets found.",
 }: Props) {
   const {
@@ -331,6 +334,7 @@ export function AssetListView({
         item={itemDetail}
         loading={loading}
         error={fetchError}
+        spaces={spaces}
         onItemSaved={handleItemSaved}
         onItemDeleted={handleItemDeleted}
       />

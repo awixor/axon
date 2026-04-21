@@ -166,6 +166,7 @@ const updateItemSchema = z
     language: z.string().optional().nullable(),
     url: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
+    spaceIds: z.array(z.string()).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.type === "RESOURCE") {
@@ -190,7 +191,7 @@ const updateItemSchema = z
     }
   });
 
-export type UpdateItemInput = z.infer<typeof updateItemSchema>;
+export type UpdateItemInput = z.input<typeof updateItemSchema>;
 
 export async function updateItem(itemId: string, data: UpdateItemInput) {
   const session = await auth();
@@ -208,40 +209,37 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
     };
   }
 
-  const stored = await getItemForUpdate(itemId, teamId);
-  if (!stored) {
-    return { success: false as const, error: "Item not found" };
-  }
-
-  const { title, content, language, url, notes } = parsed.data;
-  const type = stored.type;
+  const { title, content, language, url, notes, spaceIds } = parsed.data;
+  const type = parsed.data.type;
 
   let finalContent: string | undefined;
-  let metadata: { language: string | null } | undefined;
+  let metadata: Record<string, unknown> | undefined;
 
-  switch (type) {
-    case "RESOURCE": {
-      const urlVal = url?.trim() ?? "";
-      const notesVal = notes?.trim() ?? "";
-      finalContent = urlVal
-        ? notesVal
-          ? `URL: ${urlVal}\n${notesVal}`
-          : `URL: ${urlVal}`
-        : notesVal;
-      break;
-    }
-    case "SNIPPET": {
-      finalContent = content ?? "";
-      metadata = { ...stored.metadata, language: language?.trim() || null };
-      break;
-    }
-    case "ASSET": {
-      finalContent = undefined;
-      break;
-    }
-    default: {
-      finalContent = content ?? "";
-      break;
+  if (type === "SNIPPET") {
+    const existing = await getItemForUpdate(itemId, teamId);
+    if (!existing) return { success: false as const, error: "Item not found" };
+    finalContent = content ?? "";
+    metadata = { ...existing.metadata, language: language?.trim() || null };
+  } else {
+    switch (type) {
+      case "RESOURCE": {
+        const urlVal = url?.trim() ?? "";
+        const notesVal = notes?.trim() ?? "";
+        finalContent = urlVal
+          ? notesVal
+            ? `URL: ${urlVal}\n${notesVal}`
+            : `URL: ${urlVal}`
+          : notesVal;
+        break;
+      }
+      case "ASSET": {
+        finalContent = undefined;
+        break;
+      }
+      default: {
+        finalContent = content ?? "";
+        break;
+      }
     }
   }
 
@@ -250,6 +248,7 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
     content: finalContent,
     metadata,
     lastEditedById: userId,
+    spaceIds,
   });
 
   if (!updated) {

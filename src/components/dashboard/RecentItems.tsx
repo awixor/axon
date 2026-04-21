@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { type ItemRow } from "@/lib/db/items";
+import { type SpaceOption } from "@/lib/db/spaces";
 import { type ItemType } from "@/types/items";
 import { TYPE_CONFIG, ITEM_TYPES } from "@/lib/type-config";
 import { FilterTab } from "@/components/dashboard/FilterTab";
 import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
 
-export function RecentItems({ items }: { items: ItemRow[] }) {
+export function RecentItems({ items, spaces = [] }: { items: ItemRow[]; spaces?: SpaceOption[] }) {
   const [filter, setFilter] = useState<ItemType | "ALL">("ALL");
 
   const filtered =
@@ -47,7 +48,7 @@ export function RecentItems({ items }: { items: ItemRow[] }) {
         )}
       </div>
 
-      <ItemsGrid items={filtered} />
+      <ItemsGrid items={filtered} spaces={spaces} />
     </section>
   );
 }

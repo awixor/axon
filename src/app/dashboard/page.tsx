@@ -1,5 +1,5 @@
 import { DashboardMain } from "@/components/dashboard/DashboardMain";
-import { getRecentSpaces } from "@/lib/db/spaces";
+import { getRecentSpaces, getAllSpaces } from "@/lib/db/spaces";
 import { getRecentItems, getPinnedItems, getItemCounts } from "@/lib/db/items";
 import { getSession } from "@/lib/session";
 
@@ -7,9 +7,10 @@ export default async function DashboardPage() {
   const session = await getSession();
   const teamId = session?.user?.teamId ?? "";
 
-  const [spaces, recentItems, pinnedItems, { total, verified, recentActivity }] =
+  const [spaces, allSpaces, recentItems, pinnedItems, { total, verified, recentActivity }] =
     await Promise.all([
       getRecentSpaces(teamId),
+      getAllSpaces(teamId),
       getRecentItems(teamId),
       getPinnedItems(teamId),
       getItemCounts(teamId),
@@ -18,6 +19,7 @@ export default async function DashboardPage() {
   return (
     <DashboardMain
       spaces={spaces}
+      allSpaces={allSpaces}
       recentItems={recentItems}
       pinnedItems={pinnedItems}
       totalItems={total}

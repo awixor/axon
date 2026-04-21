@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { type ItemDetail } from "@/lib/db/items";
+import { type SpaceOption } from "@/lib/db/spaces";
 import { TYPE_CONFIG } from "@/lib/type-config";
 import { ItemContent } from "@/components/dashboard/ItemContent";
 import { relativeTime } from "@/lib/utils/time";
@@ -38,6 +39,7 @@ type Props = {
   item: ItemDetail | null;
   loading: boolean;
   error?: boolean;
+  spaces?: SpaceOption[];
   onItemSaved?: (item: ItemDetail) => void;
   onItemDeleted?: (itemId: string) => void;
 };
@@ -48,6 +50,7 @@ export function ItemDrawer({
   item,
   loading,
   error,
+  spaces = [],
   onItemSaved,
   onItemDeleted,
 }: Props) {
@@ -64,6 +67,7 @@ export function ItemDrawer({
   const [editLanguage, setEditLanguage] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editSpaceIds, setEditSpaceIds] = useState<string[]>([]);
 
   const config = item ? TYPE_CONFIG[item.type] : null;
   const Icon = config?.icon;
@@ -93,7 +97,14 @@ export function ItemDrawer({
       setEditNotes(parsedNotes);
     }
 
+    setEditSpaceIds(item.spaces.map((s) => s.id));
     setEditMode(true);
+  }
+
+  function toggleEditSpace(id: string) {
+    setEditSpaceIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
   }
 
   async function handleDelete() {
@@ -127,6 +138,7 @@ export function ItemDrawer({
       language: editLanguage || null,
       url: editUrl || null,
       notes: editNotes || null,
+      spaceIds: editSpaceIds,
     });
 
     setSaving(false);
@@ -287,11 +299,14 @@ export function ItemDrawer({
               language={editLanguage}
               url={editUrl}
               notes={editNotes}
+              spaces={spaces}
+              selectedSpaceIds={editSpaceIds}
               onTitleChange={setEditTitle}
               onContentChange={setEditContent}
               onLanguageChange={setEditLanguage}
               onUrlChange={setEditUrl}
               onNotesChange={setEditNotes}
+              onSpaceToggle={toggleEditSpace}
             />
           ) : (
             <ItemContent item={item} />
