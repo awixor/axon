@@ -6,7 +6,7 @@ export async function sendPasswordResetEmail(
   email: string,
   token: string,
 ): Promise<void> {
-  const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+  const resetUrl = encodeURI(`${process.env.NEXTAUTH_URL}/reset-password?token=${token}`);
 
   await resend.emails.send({
     from: "Axon <onboarding@resend.dev>",
@@ -34,7 +34,7 @@ export async function sendVerificationEmail(
   email: string,
   token: string,
 ): Promise<void> {
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
+  const verifyUrl = encodeURI(`${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`);
 
   await resend.emails.send({
     from: "Axon <onboarding@resend.dev>",

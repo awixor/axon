@@ -23,6 +23,10 @@ export type ProfileData = {
   totalSpaces: number;
 };
 
+function deriveInitials(name: string): string {
+  return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+}
+
 export const getUser = cache(async function getUser(userId: string): Promise<UserRow | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -32,12 +36,7 @@ export const getUser = cache(async function getUser(userId: string): Promise<Use
   if (!user) return null;
 
   const name = user.name ?? user.email ?? "?";
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = deriveInitials(name);
 
   return {
     id: user.id,
@@ -68,12 +67,7 @@ export async function getProfileData(
   if (!user) return null;
 
   const name = user.name ?? user.email ?? "?";
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = deriveInitials(name);
 
   const itemCountsByType: Record<string, number> = {};
   let totalItems = 0;

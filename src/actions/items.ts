@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { auth } from "@/auth";
-import { updateItem as dbUpdateItem, getItemRawMetadata, softDeleteItem, insertItem } from "@/lib/db/items";
+import { updateItem as dbUpdateItem, getItemForUpdate, softDeleteItem, insertItem } from "@/lib/db/items";
 import { ITEM_TYPES } from "@/lib/type-config";
 import { deleteR2Object } from "@/lib/r2";
 
@@ -168,16 +168,24 @@ const updateItemSchema = z
     notes: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    const url = data.url?.trim();
-    if (data.type === "RESOURCE" && url) {
-      try {
-        new URL(url);
-      } catch {
+    if (data.type === "RESOURCE") {
+      const url = data.url?.trim();
+      if (!url) {
         ctx.addIssue({
           code: "custom",
-          message: "Invalid URL",
+          message: "URL is required for resources",
           path: ["url"],
         });
+      } else {
+        try {
+          new URL(url);
+        } catch {
+          ctx.addIssue({
+            code: "custom",
+            message: "Invalid URL",
+            path: ["url"],
+          });
+        }
       }
     }
   });
@@ -200,7 +208,13 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
     };
   }
 
-  const { type, title, content, language, url, notes } = parsed.data;
+  const stored = await getItemForUpdate(itemId, teamId);
+  if (!stored) {
+    return { success: false as const, error: "Item not found" };
+  }
+
+  const { title, content, language, url, notes } = parsed.data;
+  const type = stored.type;
 
   let finalContent: string | undefined;
   let metadata: { language: string | null } | undefined;
@@ -218,12 +232,10 @@ export async function updateItem(itemId: string, data: UpdateItemInput) {
     }
     case "SNIPPET": {
       finalContent = content ?? "";
-      const existingMeta = await getItemRawMetadata(itemId, teamId);
-      metadata = { ...existingMeta, language: language?.trim() || null };
+      metadata = { ...stored.metadata, language: language?.trim() || null };
       break;
     }
     case "ASSET": {
-      // Content not editable for ASSET — only title updates
       finalContent = undefined;
       break;
     }

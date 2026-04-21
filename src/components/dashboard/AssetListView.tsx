@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic, startTransition } from "react";
+import { useItemDrawer } from "@/hooks/useItemDrawer";
 import { formatBytes } from "@/lib/format";
 import {
   Download,
@@ -12,7 +12,7 @@ import {
   BadgeCheck,
   FolderOpen,
 } from "lucide-react";
-import { type ItemRow, type ItemDetail } from "@/lib/db/items";
+import { type ItemRow } from "@/lib/db/items";
 import { ItemDrawer } from "@/components/dashboard/ItemDrawer";
 import { relativeTime } from "@/lib/utils/time";
 import Image from "next/image";
@@ -291,49 +291,18 @@ export function AssetListView({
   items,
   emptyMessage = "No assets found.",
 }: Props) {
-  const [optimisticItems, removeOptimisticItem] = useOptimistic(
-    items,
-    (current, deletedId: string) => current.filter((i) => i.id !== deletedId),
-  );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [itemDetail, setItemDetail] = useState<ItemDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState(false);
-
-  async function handleRowClick(id: string) {
-    setSelectedId(id);
-    setDrawerOpen(true);
-    setLoading(true);
-    setItemDetail(null);
-    setFetchError(false);
-    try {
-      const res = await fetch(`/api/items/${id}`);
-      if (res.ok) {
-        setItemDetail((await res.json()) as ItemDetail);
-      } else {
-        setFetchError(true);
-      }
-    } catch {
-      setFetchError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleOpenChange(open: boolean) {
-    setDrawerOpen(open);
-    if (!open) {
-      setSelectedId(null);
-      setItemDetail(null);
-    }
-  }
-
-  function handleItemDeleted(itemId: string) {
-    startTransition(() => {
-      removeOptimisticItem(itemId);
-    });
-  }
+  const {
+    optimisticItems,
+    selectedId,
+    drawerOpen,
+    itemDetail,
+    loading,
+    fetchError,
+    handleOpen,
+    handleOpenChange,
+    handleItemDeleted,
+    handleItemSaved,
+  } = useItemDrawer(items);
 
   if (optimisticItems.length === 0) {
     return <EmptyState message={emptyMessage} />;
@@ -349,7 +318,7 @@ export function AssetListView({
               key={item.id}
               item={item}
               selected={item.id === selectedId}
-              onClick={() => handleRowClick(item.id)}
+              onClick={() => handleOpen(item.id)}
             />
           ))}
         </div>
@@ -362,7 +331,7 @@ export function AssetListView({
         item={itemDetail}
         loading={loading}
         error={fetchError}
-        onItemSaved={(updated) => setItemDetail(updated)}
+        onItemSaved={handleItemSaved}
         onItemDeleted={handleItemDeleted}
       />
     </>

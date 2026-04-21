@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/auth";
 import { r2, R2_BUCKET, isSafeInline } from "@/lib/r2";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _req: NextRequest,
@@ -12,11 +13,19 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const teamId = session.user.teamId;
+  if (!teamId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { key: segments } = await params;
   const key = segments.join("/");
 
-  // Only allow users to access their own uploads
-  if (!key.startsWith(`uploads/${session.user.id}/`)) {
+  const item = await prisma.item.findFirst({
+    where: { fileUrl: key, teamId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!item) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -265,6 +265,18 @@ async function getItemRawMetadata(
   return (item?.metadata as Record<string, unknown>) ?? {};
 }
 
+export async function getItemForUpdate(
+  id: string,
+  teamId: string,
+): Promise<{ type: string; metadata: Record<string, unknown> } | null> {
+  const item = await prisma.item.findFirst({
+    where: { id, teamId, deletedAt: null },
+    select: { type: true, metadata: true },
+  });
+  if (!item) return null;
+  return { type: item.type, metadata: (item.metadata as Record<string, unknown>) ?? {} };
+}
+
 export { getItemRawMetadata };
 
 export async function updateItem(

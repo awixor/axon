@@ -14,10 +14,10 @@ export default async function AppShell({
   const session = await getSession();
   if (!session?.user?.id) redirect("/login");
 
-  const user = await getUser(session.user.id);
-  const teamId = user?.teamId ?? "";
+  const teamId = session.user.teamId ?? "";
 
-  const [spaces, allSpaces] = await Promise.all([
+  const [user, spaces, allSpaces] = await Promise.all([
+    getUser(session.user.id),
     getRecentSpaces(teamId),
     getAllSpaces(teamId),
   ]);
