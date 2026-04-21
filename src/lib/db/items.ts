@@ -191,6 +191,57 @@ export async function getItemsByType(
   });
 }
 
+export async function getItemsBySpaceId(
+  spaceId: string,
+  teamId: string,
+): Promise<ItemRow[]> {
+  const itemSpaces = await prisma.itemSpace.findMany({
+    where: {
+      spaceId,
+      item: { teamId, deletedAt: null },
+    },
+    orderBy: { item: { updatedAt: "desc" } },
+    select: {
+      pinned: true,
+      item: {
+        select: {
+          ...itemSelect,
+          metadata: true,
+        },
+      },
+    },
+  });
+
+  return itemSpaces.map(({ item, pinned }) => {
+    const isAsset = item.type === "ASSET";
+    const meta = isAsset
+      ? (item.metadata as Record<string, unknown> | null)
+      : null;
+
+    let assetMeta: AssetMeta | undefined;
+    if (isAsset && meta?.fileKey) {
+      assetMeta = {
+        fileKey: meta.fileKey as string,
+        fileName: (meta.fileName as string) ?? "",
+        fileSize: (meta.fileSize as number) ?? 0,
+        mimeType: (meta.mimeType as string) ?? "application/octet-stream",
+      };
+    }
+
+    return {
+      id: item.id,
+      title: item.title,
+      type: item.type as ItemType,
+      content: item.content,
+      isVerified: item.isVerified,
+      isPinned: pinned,
+      authorName: item.author.name ?? "Unknown",
+      updatedAt: item.updatedAt.toISOString(),
+      ...(assetMeta ? { assetMeta } : {}),
+    };
+  });
+}
+
 export async function getItemById(
   id: string,
   teamId: string,

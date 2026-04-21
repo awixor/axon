@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { ArrowRight, Folder } from "lucide-react";
 import { type SpaceRow } from "@/lib/db/spaces";
 
 export function SpaceCard({ space }: { space: SpaceRow }) {
   return (
-    <div
-      className="group relative rounded-lg border border-border bg-card overflow-hidden cursor-pointer transition-colors"
+    <Link
+      href={`/spaces/${space.id}`}
+      className="group relative rounded-lg border border-border bg-card overflow-hidden cursor-pointer transition-colors block"
       style={{ "--space-color": space.color } as React.CSSProperties}
     >
       {/* Corner glow — top left */}
@@ -61,6 +63,6 @@ export function SpaceCard({ space }: { space: SpaceRow }) {
           </p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }

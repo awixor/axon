@@ -48,6 +48,68 @@ export type SpaceRow = {
   updatedAt: string; // ISO string — safe to pass to client components
 };
 
+export type SpaceDetail = SpaceRow & { visibility: "PUBLIC" | "PRIVATE_TO_TEAM" };
+
+export const getAllSpacesWithCount = cache(async function getAllSpacesWithCount(
+  teamId: string,
+): Promise<SpaceRow[]> {
+  const spaces = await prisma.space.findMany({
+    where: { teamId },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      color: true,
+      description: true,
+      isPersonal: true,
+      updatedAt: true,
+      _count: { select: { items: true } },
+    },
+  });
+
+  return spaces.map((s) => ({
+    id: s.id,
+    name: s.name,
+    color: s.color,
+    description: s.description,
+    isPersonal: s.isPersonal,
+    itemCount: s._count.items,
+    updatedAt: s.updatedAt.toISOString(),
+  }));
+});
+
+export const getSpaceById = cache(async function getSpaceById(
+  id: string,
+  teamId: string,
+): Promise<SpaceDetail | null> {
+  const s = await prisma.space.findFirst({
+    where: { id, teamId },
+    select: {
+      id: true,
+      name: true,
+      color: true,
+      description: true,
+      isPersonal: true,
+      visibility: true,
+      updatedAt: true,
+      _count: { select: { items: true } },
+    },
+  });
+
+  if (!s) return null;
+
+  return {
+    id: s.id,
+    name: s.name,
+    color: s.color,
+    description: s.description,
+    isPersonal: s.isPersonal,
+    visibility: s.visibility,
+    itemCount: s._count.items,
+    updatedAt: s.updatedAt.toISOString(),
+  };
+});
+
 export const getRecentSpaces = cache(async function getRecentSpaces(
   teamId: string,
   limit: number = 6,
