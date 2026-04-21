@@ -10,15 +10,14 @@ import { Download, Eye, EyeOff, ExternalLink, FileText } from "lucide-react";
 import { type ItemDetail } from "@/lib/db/items";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import Image from "next/image";
 
 export type ItemContentProps = { item: ItemDetail };
 
 // ─── Snippet ──────────────────────────────────────────────────────────────────
 
 export function SnippetContent({ item }: ItemContentProps) {
-  return (
-    <CodeEditor value={item.content} language={item.language ?? "text"} />
-  );
+  return <CodeEditor value={item.content} language={item.language ?? "text"} />;
 }
 
 // ─── Runbook ──────────────────────────────────────────────────────────────────
@@ -132,9 +131,7 @@ export function AssetContent({ item }: ItemContentProps) {
   const meta = item.assetMeta;
 
   if (!meta?.fileKey) {
-    return (
-      <PlainContent content={item.content || "No file attached"} />
-    );
+    return <PlainContent content={item.content || "No file attached"} />;
   }
 
   const proxyUrl = `/api/files/${meta.fileKey}`;
@@ -143,12 +140,13 @@ export function AssetContent({ item }: ItemContentProps) {
   return (
     <div className="flex flex-col gap-3">
       {isImage && (
-        <div className="rounded-md overflow-hidden border border-border bg-muted/20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="relative h-80 rounded-md overflow-hidden border border-border bg-muted/20">
+          <Image
             src={proxyUrl}
             alt={meta.fileName}
-            className="max-w-full max-h-80 object-contain mx-auto block"
+            fill
+            className="object-contain"
+            unoptimized
           />
         </div>
       )}
@@ -158,7 +156,10 @@ export function AssetContent({ item }: ItemContentProps) {
           className="flex items-center justify-center size-8 rounded-md shrink-0"
           style={{ backgroundColor: isImage ? "#60a5fa18" : "#6366f118" }}
         >
-          <FileText size={14} style={{ color: isImage ? "#60a5fa" : "#6366f1" }} />
+          <FileText
+            size={14}
+            style={{ color: isImage ? "#60a5fa" : "#6366f1" }}
+          />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium truncate">{meta.fileName}</p>
@@ -298,7 +299,9 @@ export function MarkdownContent({
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto my-2">
-              <table className="text-xs border-collapse w-full">{children}</table>
+              <table className="text-xs border-collapse w-full">
+                {children}
+              </table>
             </div>
           ),
           thead: ({ children }) => <thead>{children}</thead>,

@@ -15,6 +15,7 @@ import {
 import { type ItemRow, type ItemDetail } from "@/lib/db/items";
 import { ItemDrawer } from "@/components/dashboard/ItemDrawer";
 import { relativeTime } from "@/lib/utils/time";
+import Image from "next/image";
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
 
@@ -146,12 +147,13 @@ function AssetRow({ item, selected, onClick }: RowProps) {
           style={{ backgroundColor: bgColor }}
         >
           {isImage && proxyUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={proxyUrl}
               alt={meta!.fileName}
+              width={40}
+              height={40}
               className="size-full object-cover"
-              loading="lazy"
+              unoptimized
             />
           ) : (
             <Icon size={15} style={{ color }} />
@@ -210,12 +212,13 @@ function AssetRow({ item, selected, onClick }: RowProps) {
           style={{ backgroundColor: bgColor }}
         >
           {isImage && proxyUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={proxyUrl}
               alt={meta!.fileName}
+              width={40}
+              height={40}
               className="size-full object-cover"
-              loading="lazy"
+              unoptimized
             />
           ) : (
             <Icon size={15} style={{ color }} />
