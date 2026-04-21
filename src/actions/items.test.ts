@@ -3,20 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock("@/auth", () => ({
-  auth: vi.fn().mockResolvedValue({ user: { id: "user-1" } }),
+  auth: vi.fn().mockResolvedValue({ user: { id: "user-1", teamId: "team-1" } }),
 }));
 
-vi.mock("@/lib/db/users", () => ({
-  getUser: vi.fn().mockResolvedValue({ id: "user-1", teamId: "team-1" }),
-}));
-
-const mockGetItemRawMetadata = vi.fn().mockResolvedValue({});
+const mockGetItemForUpdate = vi.fn().mockResolvedValue({ type: "DOC", metadata: {} });
 const mockDbUpdateItem = vi.fn();
 const mockSoftDeleteItem = vi.fn().mockResolvedValue({ deleted: true, fileUrl: null });
 const mockInsertItem = vi.fn().mockResolvedValue({ id: "item-new", title: "T", type: "SNIPPET" });
 
 vi.mock("@/lib/db/items", () => ({
-  getItemRawMetadata: mockGetItemRawMetadata,
+  getItemForUpdate: mockGetItemForUpdate,
   updateItem: mockDbUpdateItem,
   softDeleteItem: mockSoftDeleteItem,
   insertItem: mockInsertItem,
@@ -43,7 +39,6 @@ vi.mock("@/lib/type-config", () => ({
 // Import after mocks
 const { updateItem, deleteItem, createItem } = await import("@/actions/items");
 const { auth } = await import("@/auth");
-const { getUser } = await import("@/lib/db/users");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,12 +47,11 @@ const updatedItem = { id: "item-1", title: "T", type: "SNIPPET" };
 beforeEach(() => {
   vi.clearAllMocks();
   mockDbUpdateItem.mockResolvedValue(updatedItem);
-  mockGetItemRawMetadata.mockResolvedValue({});
+  mockGetItemForUpdate.mockResolvedValue({ type: "DOC", metadata: {} });
   mockSoftDeleteItem.mockResolvedValue({ deleted: true, fileUrl: null });
   mockInsertItem.mockResolvedValue({ id: "item-new", title: "T", type: "SNIPPET" });
   mockDeleteR2Object.mockResolvedValue(undefined);
-  vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as never);
-  vi.mocked(getUser).mockResolvedValue({ id: "user-1", teamId: "team-1" } as never);
+  vi.mocked(auth).mockResolvedValue({ user: { id: "user-1", teamId: "team-1" } } as never);
 });
 
 // ─── createItem ───────────────────────────────────────────────────────────────
@@ -72,10 +66,10 @@ describe("createItem — auth guards", () => {
   });
 
   it("returns error when user has no teamId", async () => {
-    vi.mocked(getUser).mockResolvedValueOnce(null);
+    vi.mocked(auth).mockResolvedValueOnce({ user: { id: "user-1" } } as never);
     const result = await createItem({ type: "DOC", title: "T", content: "c" });
     expect(result.success).toBe(false);
-    expect(result.error).toMatch(/user not found/i);
+    expect(result.error).toMatch(/not authenticated/i);
     expect(mockInsertItem).not.toHaveBeenCalled();
   });
 });
@@ -320,6 +314,8 @@ describe("updateItem — content assembly", () => {
 
 describe("updateItem — SNIPPET metadata", () => {
   it("sets language in metadata", async () => {
+    mockGetItemForUpdate.mockResolvedValueOnce({ type: "SNIPPET", metadata: {} });
+
     await updateItem("item-1", {
       type: "SNIPPET",
       title: "My snippet",
@@ -337,7 +333,10 @@ describe("updateItem — SNIPPET metadata", () => {
   });
 
   it("merges language into existing metadata without overwriting other keys", async () => {
-    mockGetItemRawMetadata.mockResolvedValue({ someOtherKey: "preserved" });
+    mockGetItemForUpdate.mockResolvedValueOnce({
+      type: "SNIPPET",
+      metadata: { someOtherKey: "preserved" },
+    });
 
     await updateItem("item-1", {
       type: "SNIPPET",
@@ -356,6 +355,8 @@ describe("updateItem — SNIPPET metadata", () => {
   });
 
   it("sets language to null when empty string provided", async () => {
+    mockGetItemForUpdate.mockResolvedValueOnce({ type: "SNIPPET", metadata: {} });
+
     await updateItem("item-1", {
       type: "SNIPPET",
       title: "My snippet",
@@ -376,8 +377,21 @@ describe("updateItem — SNIPPET metadata", () => {
 // ─── DB failure ───────────────────────────────────────────────────────────────
 
 describe("updateItem — DB failure", () => {
-  it("returns error when item is not found", async () => {
-    mockDbUpdateItem.mockResolvedValue(null);
+  it("returns error when SNIPPET item is not found", async () => {
+    mockGetItemForUpdate.mockResolvedValueOnce(null);
+
+    const result = await updateItem("item-1", {
+      type: "SNIPPET",
+      title: "My snippet",
+      content: "const x = 1",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/not found/i);
+  });
+
+  it("returns error when non-SNIPPET item is not found", async () => {
+    mockDbUpdateItem.mockResolvedValueOnce(null);
 
     const result = await updateItem("item-1", {
       type: "DOC",
@@ -387,6 +401,33 @@ describe("updateItem — DB failure", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/not found/i);
+  });
+});
+
+// ─── spaceIds forwarding ──────────────────────────────────────────────────────
+
+describe("updateItem — spaceIds", () => {
+  it("passes spaceIds to dbUpdateItem", async () => {
+    await updateItem("item-1", {
+      type: "DOC",
+      title: "T",
+      content: "c",
+      spaceIds: ["space-1", "space-2"],
+    });
+    expect(mockDbUpdateItem).toHaveBeenCalledWith(
+      "item-1",
+      "team-1",
+      expect.objectContaining({ spaceIds: ["space-1", "space-2"] }),
+    );
+  });
+
+  it("passes undefined spaceIds when not provided", async () => {
+    await updateItem("item-1", { type: "DOC", title: "T", content: "c" });
+    expect(mockDbUpdateItem).toHaveBeenCalledWith(
+      "item-1",
+      "team-1",
+      expect.objectContaining({ spaceIds: undefined }),
+    );
   });
 });
 
@@ -408,10 +449,10 @@ describe("deleteItem", () => {
   });
 
   it("returns error when user has no teamId", async () => {
-    vi.mocked(getUser).mockResolvedValueOnce(null);
+    vi.mocked(auth).mockResolvedValueOnce({ user: { id: "user-1" } } as never);
     const result = await deleteItem("item-1");
     expect(result.success).toBe(false);
-    expect(result.error).toMatch(/user not found/i);
+    expect(result.error).toMatch(/not authenticated/i);
     expect(mockSoftDeleteItem).not.toHaveBeenCalled();
   });
 

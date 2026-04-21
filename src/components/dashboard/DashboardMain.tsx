@@ -1,5 +1,5 @@
 import { Activity, Layers, Pin, ShieldCheck } from "lucide-react";
-import { type SpaceRow } from "@/lib/db/spaces";
+import { type SpaceRow, type SpaceOption } from "@/lib/db/spaces";
 import { type ItemRow } from "@/lib/db/items";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ItemsGrid } from "@/components/dashboard/ItemsGrid";
@@ -8,6 +8,7 @@ import { RecentItems } from "@/components/dashboard/RecentItems";
 
 type Props = {
   spaces: SpaceRow[];
+  allSpaces: SpaceOption[];
   pinnedItems: ItemRow[];
   recentItems: ItemRow[];
   totalItems: number;
@@ -17,6 +18,7 @@ type Props = {
 
 export function DashboardMain({
   spaces,
+  allSpaces,
   pinnedItems,
   recentItems,
   totalItems,
@@ -58,12 +60,12 @@ export function DashboardMain({
               <Pin size={13} className="text-muted-foreground" />
               Pinned
             </h2>
-            <ItemsGrid items={pinnedItems} />
+            <ItemsGrid items={pinnedItems} spaces={allSpaces} />
           </section>
         )}
 
         {/* Recent Items */}
-        <RecentItems items={recentItems} />
+        <RecentItems items={recentItems} spaces={allSpaces} />
       </div>
     </main>
   );

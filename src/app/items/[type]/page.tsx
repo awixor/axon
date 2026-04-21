@@ -39,11 +39,11 @@ export default async function ItemListPage({
       </div>
 
       {itemType === "ASSET" ? (
-        <AssetListView items={items} emptyMessage="No assets yet." />
+        <AssetListView items={items} spaces={spaces} emptyMessage="No assets yet." />
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">No {config.plural.toLowerCase()} yet.</p>
       ) : (
-        <ItemsGrid items={items} />
+        <ItemsGrid items={items} spaces={spaces} />
       )}
     </div>
   );

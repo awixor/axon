@@ -1,16 +1,18 @@
 "use client";
 
 import { type ItemRow } from "@/lib/db/items";
+import { type SpaceOption } from "@/lib/db/spaces";
 import { ItemCard } from "@/components/dashboard/ItemCard";
 import { ItemDrawer } from "@/components/dashboard/ItemDrawer";
 import { useItemDrawer } from "@/hooks/useItemDrawer";
 
 type Props = {
   items: ItemRow[];
+  spaces?: SpaceOption[];
   emptyMessage?: string;
 };
 
-export function ItemsGrid({ items, emptyMessage = "No items found." }: Props) {
+export function ItemsGrid({ items, spaces = [], emptyMessage = "No items found." }: Props) {
   const {
     optimisticItems,
     selectedId,
@@ -49,6 +51,7 @@ export function ItemsGrid({ items, emptyMessage = "No items found." }: Props) {
         item={itemDetail}
         loading={loading}
         error={fetchError}
+        spaces={spaces}
         onItemSaved={handleItemSaved}
         onItemDeleted={handleItemDeleted}
       />

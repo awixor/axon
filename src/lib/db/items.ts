@@ -252,6 +252,7 @@ export type UpdateItemFields = {
   content?: string;
   metadata?: Record<string, unknown>;
   lastEditedById: string;
+  spaceIds?: string[];
 };
 
 async function getItemRawMetadata(
@@ -284,19 +285,42 @@ export async function updateItem(
   teamId: string,
   fields: UpdateItemFields,
 ): Promise<ItemDetail | null> {
-  const result = await prisma.item.updateMany({
-    where: { id, teamId, deletedAt: null },
-    data: {
-      title: fields.title,
-      lastEditedById: fields.lastEditedById,
-      ...(fields.content !== undefined && { content: fields.content }),
-      ...(fields.metadata !== undefined && {
-        metadata: fields.metadata as InputJsonValue,
-      }),
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.item.updateMany({
+      where: { id, teamId, deletedAt: null },
+      data: {
+        title: fields.title,
+        lastEditedById: fields.lastEditedById,
+        ...(fields.content !== undefined && { content: fields.content }),
+        ...(fields.metadata !== undefined && {
+          metadata: fields.metadata as InputJsonValue,
+        }),
+      },
+    });
+
+    if (result.count === 0) return null;
+
+    if (fields.spaceIds !== undefined) {
+      await tx.itemSpace.deleteMany({ where: { itemId: id } });
+      if (fields.spaceIds.length > 0) {
+        const validSpaces = await tx.space.findMany({
+          where: { id: { in: fields.spaceIds }, teamId },
+          select: { id: true },
+        });
+        const validIds = validSpaces.map((s) => s.id);
+        if (validIds.length > 0) {
+          await tx.itemSpace.createMany({
+            data: validIds.map((spaceId) => ({ itemId: id, spaceId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    }
+
+    return true;
   });
 
-  if (result.count === 0) return null;
+  if (!updated) return null;
   return getItemById(id, teamId);
 }
 
