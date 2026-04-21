@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { insertSpace } from "@/lib/db/spaces";
+import { insertSpace, updateSpaceById, deleteSpaceById } from "@/lib/db/spaces";
 import { SpaceVisibility } from "@/lib/space-config";
 
 const createSpaceSchema = z.object({
@@ -40,4 +40,43 @@ export async function createSpace(data: CreateSpaceInput) {
 
   revalidatePath("/dashboard");
   return { success: true as const, data: space };
+}
+
+const spaceMetaSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100),
+  description: z.string().trim().max(500).optional().nullable(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid color"),
+  visibility: z
+    .enum([SpaceVisibility.PrivateToTeam, SpaceVisibility.Public])
+    .default(SpaceVisibility.PrivateToTeam),
+});
+
+export type UpdateSpaceInput = z.input<typeof spaceMetaSchema>;
+
+export async function updateSpace(id: string, data: UpdateSpaceInput) {
+  const session = await auth();
+  const teamId = session?.user?.teamId;
+  if (!teamId) return { success: false as const, error: "Not authenticated" };
+
+  const parsed = spaceMetaSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0]?.message ?? "Validation failed" };
+  }
+
+  const space = await updateSpaceById(id, teamId, parsed.data);
+  revalidatePath("/dashboard");
+  revalidatePath("/spaces");
+  revalidatePath(`/spaces/${id}`);
+  return { success: true as const, data: space };
+}
+
+export async function deleteSpace(id: string) {
+  const session = await auth();
+  const teamId = session?.user?.teamId;
+  if (!teamId) return { success: false as const, error: "Not authenticated" };
+
+  await deleteSpaceById(id, teamId);
+  revalidatePath("/dashboard");
+  revalidatePath("/spaces");
+  return { success: true as const };
 }

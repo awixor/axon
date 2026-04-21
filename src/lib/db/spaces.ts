@@ -110,6 +110,37 @@ export const getSpaceById = cache(async function getSpaceById(
   };
 });
 
+export type UpdateSpaceData = {
+  name: string;
+  description?: string | null;
+  color: string;
+  visibility: "PUBLIC" | "PRIVATE_TO_TEAM";
+};
+
+export async function updateSpaceById(
+  id: string,
+  teamId: string,
+  data: UpdateSpaceData,
+) {
+  return prisma.space.update({
+    where: { id, teamId },
+    data: {
+      name: data.name,
+      description: data.description ?? null,
+      color: data.color,
+      visibility: data.visibility,
+    },
+    select: { id: true, name: true, color: true },
+  });
+}
+
+export async function deleteSpaceById(id: string, teamId: string) {
+  await prisma.$transaction([
+    prisma.itemSpace.deleteMany({ where: { spaceId: id } }),
+    prisma.space.delete({ where: { id, teamId } }),
+  ]);
+}
+
 export const getRecentSpaces = cache(async function getRecentSpaces(
   teamId: string,
   limit: number = 6,

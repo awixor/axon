@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { getSpaceById, getAllSpaces } from "@/lib/db/spaces";
 import { getItemsBySpaceId } from "@/lib/db/items";
 import { SpaceItemsGrid } from "@/components/spaces/SpaceItemsGrid";
+import { SpaceHeaderActions } from "@/components/spaces/SpaceHeaderActions";
 
 export default async function SpaceDetailPage({
   params,
@@ -43,10 +44,10 @@ export default async function SpaceDetailPage({
           >
             <Folder size={16} style={{ color: space.color }} />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <h1 className="text-lg font-semibold">{space.name}</h1>
             <span
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums"
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums shrink-0"
               style={{
                 backgroundColor: space.color + "25",
                 color: space.color,
@@ -54,6 +55,9 @@ export default async function SpaceDetailPage({
             >
               {space.itemCount}
             </span>
+            <div className="ml-auto">
+              <SpaceHeaderActions space={space} />
+            </div>
           </div>
         </div>
         {space.description && (
