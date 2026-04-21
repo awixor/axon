@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Menu, Plus, Search } from 'lucide-react'
+import { Menu, Plus, Search, FolderPlus } from 'lucide-react'
 import { useSidebar } from './SidebarContext'
 import { NewItemDialog } from './NewItemDialog'
+import { NewSpaceDialog } from '@/components/spaces/NewSpaceDialog'
 import type { SpaceOption } from '@/lib/db/spaces'
 
 type Props = {
@@ -14,7 +15,8 @@ type Props = {
 
 export function TopBar({ spaces }: Props) {
   const { setMobileOpen } = useSidebar()
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [itemDialogOpen, setItemDialogOpen] = useState(false)
+  const [spaceDialogOpen, setSpaceDialogOpen] = useState(false)
 
   return (
     <>
@@ -38,8 +40,17 @@ export function TopBar({ spaces }: Props) {
           </kbd>
         </div>
 
-        <div className="ml-auto">
-          <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setSpaceDialogOpen(true)}
+          >
+            <FolderPlus className="size-4" />
+            New Space
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setItemDialogOpen(true)}>
             <Plus className="size-4" />
             New Item
           </Button>
@@ -47,9 +58,13 @@ export function TopBar({ spaces }: Props) {
       </header>
 
       <NewItemDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={itemDialogOpen}
+        onOpenChange={setItemDialogOpen}
         spaces={spaces}
+      />
+      <NewSpaceDialog
+        open={spaceDialogOpen}
+        onOpenChange={setSpaceDialogOpen}
       />
     </>
   )

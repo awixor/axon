@@ -1,6 +1,27 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
+export type InsertSpaceData = {
+  name: string;
+  description?: string | null;
+  color: string;
+  visibility: "PUBLIC" | "PRIVATE_TO_TEAM";
+};
+
+export async function insertSpace(teamId: string, data: InsertSpaceData) {
+  return prisma.space.create({
+    data: {
+      name: data.name,
+      description: data.description ?? null,
+      color: data.color,
+      visibility: data.visibility,
+      isPersonal: false,
+      teamId,
+    },
+    select: { id: true, name: true, color: true },
+  });
+}
+
 export type SpaceOption = {
   id: string;
   name: string;
